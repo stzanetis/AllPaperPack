@@ -1,29 +1,45 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase/client';
+
+interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  parent_id: string | null;
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id,name,description,parent_id')
+        .is('parent_id', null) // only primary categories
+        .order('name');
+
+      if (!error && data) {
+        setCategories(data as Category[]);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div>
+      <h1>TEST</h1>
+
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 mb-12">
+        {categories.map((category) => (
+          <div key={category.id}>
+            <h1 className="font-tinos text-xl font-medium">{category.name}</h1>
+            <h2 className="text-sm break-words leading-snug">{category.description}</h2>
+          </div>
+        ))}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </div>
   )
 }
 
