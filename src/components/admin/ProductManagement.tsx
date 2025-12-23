@@ -13,20 +13,19 @@ import { toast } from '@/components/ui/use-toast';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
-  description: string;
+  description: string | null;
   price: number;
   vat: number;
-  image_url: string;
+  image_url: string | null;
   stock: number;
-  is_active: boolean;
-  categories: { name: string } | null;
-  category_id: string;
+  category_name: string | null;
+  category_id: number | null;
 }
 
 interface Category {
-  id: string;
+  id: number;
   name: string;
 }
 
@@ -42,26 +41,27 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const fetchProducts = async () => {
+    // Use view_products_flat which has category info
     const { data, error } = await supabase
-      .from('products')
-      .select(`
-        id,
-        name,
-        description,
-        price,
-        vat,
-        image_url,
-        stock,
-        is_active,
-        category_id,
-        categories:category_id (name)
-      `)
-      .order('created_at', { ascending: false });
+      .from('view_products_flat')
+      .select('product_id, product_name, description, price, vat, image_url, stock, category_id, category_name')
+      .order('product_id', { ascending: false });
 
     if (error) {
       console.error('Error fetching products:', error);
     } else {
-      setProducts(data || []);
+      const mappedProducts: Product[] = (data || []).map(p => ({
+        id: p.product_id,
+        name: p.product_name,
+        description: p.description,
+        price: p.price,
+        vat: p.vat,
+        image_url: p.image_url,
+        stock: p.stock,
+        category_name: p.category_name,
+        category_id: p.category_id
+      }));
+      setProducts(mappedProducts);
     }
   };
 
@@ -92,24 +92,49 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
       name: formData.get('name') as string,
       description: formData.get('description') as string,
       price: parseFloat(formData.get('price') as string),
+      vat: parseInt(formData.get('vat') as string) || 24,
       image_url: formData.get('image_url') as string,
       stock: parseInt(formData.get('stock') as string),
-      category_id: formData.get('category_id') as string,
-      is_active: true,
     };
+    const categoryId = parseInt(formData.get('category_id') as string);
 
     let error;
     if (editingProduct) {
+      // Update product
       const { error: updateError } = await supabase
         .from('products')
         .update(productData)
         .eq('id', editingProduct.id);
       error = updateError;
+
+      // Update category relationship if changed
+      if (!error && categoryId && categoryId !== editingProduct.category_id) {
+        // Remove old category relationship
+        await supabase
+          .from('products_belong_to_categories')
+          .delete()
+          .eq('product_id', editingProduct.id);
+        
+        // Add new category relationship
+        await supabase
+          .from('products_belong_to_categories')
+          .insert({ product_id: editingProduct.id, category_id: categoryId });
+      }
     } else {
-      const { error: insertError } = await supabase
+      // Insert new product
+      const { data: newProduct, error: insertError } = await supabase
         .from('products')
-        .insert(productData);
+        .insert(productData)
+        .select()
+        .single();
       error = insertError;
+
+      // Add category relationship for new product
+      if (!error && newProduct && categoryId) {
+        await supabase
+          .from('products_belong_to_categories')
+          .insert({ product_id: newProduct.id, category_id: categoryId });
+      }
     }
 
     if (error) {
@@ -132,7 +157,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
     setLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     const { error } = await supabase
@@ -213,14 +238,13 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">ΦΠΑ (Ποσοστό)</Label>
+                <Label htmlFor="vat">ΦΠΑ (Ποσοστό)</Label>
                 <Input
-                  id="price"
-                  name="price"
+                  id="vat"
+                  name="vat"
                   type="number"
-                  step="0.01"
                   required
-                  defaultValue={editingProduct?.vat || ''}
+                  defaultValue={editingProduct?.vat || 24}
                 />
               </div>
               <div className="space-y-2">
@@ -235,13 +259,13 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category_id">Κατηγορία</Label>
-                <Select name="category_id" defaultValue={editingProduct?.category_id || ''}>
+                <Select name="category_id" defaultValue={editingProduct?.category_id?.toString() || ''}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
+                      <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name}
                       </SelectItem>
                     ))}
@@ -275,7 +299,6 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                 <TableHead>Τιμή</TableHead>
                 <TableHead>ΦΠΑ</TableHead>
                 <TableHead>Απόθεμα</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Ενέργειες</TableHead>
               </TableRow>
             </TableHeader>
@@ -290,13 +313,12 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                     />
                   </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>{product.categories?.name || 'No category'}</TableCell>
+                  <TableCell>{product.category_name || 'No category'}</TableCell>
                   <TableCell>{product.price.toFixed(2)}€</TableCell>
                   <TableCell>{product.vat}%</TableCell>
-                  <TableCell>{product.stock}</TableCell>
                   <TableCell>
-                    <Badge variant={product.is_active ? "default" : "secondary"}>
-                      {product.is_active ? 'Active' : 'Inactive'}
+                    <Badge variant={product.stock > 0 ? "default" : "destructive"}>
+                      {product.stock}
                     </Badge>
                   </TableCell>
                   <TableCell>

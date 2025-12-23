@@ -7,12 +7,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 
+// Greek order status enum values
+type OrderStatus = 'Καταχωρημένη' | 'Προς Αποστολή' | 'Ολοκληρώθηκε' | 'Ακυρώθηκε';
+
 interface Order {
-  id: string;
+  id: number;
   total: number;
-  status: string;
-  created_at: string;
-  user_id: string;
+  status: OrderStatus;
+  date: string;
+  user_email?: string;
+  user_name?: string;
 }
 
 export const OrderManagement = () => {
@@ -20,29 +24,58 @@ export const OrderManagement = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchOrders = async () => {
-    const { data, error } = await supabase
+    // Fetch orders with user info via user_places_orders junction table
+    const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
-      .select(`
-        id,
-        total,
-        status,
-        created_at,
-        user_id
-      `)
-      .order('created_at', { ascending: false });
+      .select('id, total, status, date')
+      .order('date', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching orders:', error);
-    } else {
-      setOrders(data || []);
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError);
+      return;
     }
+
+    // For each order, fetch the user info via user_places_orders
+    const ordersWithUsers = await Promise.all(
+      (ordersData || []).map(async (order) => {
+        const { data: userLink } = await supabase
+          .from('user_places_orders')
+          .select('user_id')
+          .eq('order_id', order.id)
+          .single();
+
+        let user_email: string | undefined;
+        let user_name: string | undefined;
+
+        if (userLink?.user_id) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('email, first_name, last_name')
+            .eq('id', userLink.user_id)
+            .single();
+
+          if (userData) {
+            user_email = userData.email || undefined;
+            user_name = [userData.first_name, userData.last_name].filter(Boolean).join(' ') || undefined;
+          }
+        }
+
+        return {
+          ...order,
+          user_email,
+          user_name,
+        };
+      })
+    );
+
+    setOrders(ordersWithUsers);
   };
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  const updateOrderStatus = async (orderId: string, status: string) => {
+  const updateOrderStatus = async (orderId: number, status: OrderStatus) => {
     setLoading(true);
 
     const { error } = await supabase
@@ -52,14 +85,14 @@ export const OrderManagement = () => {
 
     if (error) {
       toast({
-        title: "Error",
+        title: "Σφάλμα",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Success",
-        description: "Order status updated successfully",
+        title: "Επιτυχία",
+        description: "Η κατάσταση παραγγελίας ενημερώθηκε",
       });
       fetchOrders();
     }
@@ -67,17 +100,15 @@ export const OrderManagement = () => {
     setLoading(false);
   };
 
-  const getStatusVariant = (status: string) => {
+  const getStatusVariant = (status: OrderStatus) => {
     switch (status) {
-      case 'pending':
+      case 'Καταχωρημένη':
         return 'secondary';
-      case 'confirmed':
+      case 'Προς Αποστολή':
         return 'default';
-      case 'shipped':
-        return 'outline';
-      case 'delivered':
+      case 'Ολοκληρώθηκε':
         return 'default';
-      case 'cancelled':
+      case 'Ακυρώθηκε':
         return 'destructive';
       default:
         return 'secondary';
@@ -94,49 +125,51 @@ export const OrderManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Κωδικός</TableHead>
+                <TableHead>Πελάτης</TableHead>
+                <TableHead>Σύνολο</TableHead>
+                <TableHead>Κατάσταση</TableHead>
+                <TableHead>Ημερομηνία</TableHead>
+                <TableHead>Ενέργειες</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-mono text-sm">
-                    #{order.id.slice(-8)}
+                    #{order.id}
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm text-muted-foreground">
-                      Customer ID: {order.user_id.slice(-8)}
+                    <div className="text-sm">
+                      {order.user_name || 'Άγνωστος'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {order.user_email || '-'}
                     </div>
                   </TableCell>
-                  <TableCell>€{order.total.toFixed(2)}</TableCell>
+                  <TableCell>{order.total.toFixed(2)}€</TableCell>
                   <TableCell>
                     <Badge variant={getStatusVariant(order.status)}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      {order.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {new Date(order.created_at).toLocaleDateString()}
+                    {new Date(order.date).toLocaleDateString('el-GR')}
                   </TableCell>
                   <TableCell>
                     <Select
                       value={order.status}
-                      onValueChange={(value) => updateOrderStatus(order.id, value)}
+                      onValueChange={(value) => updateOrderStatus(order.id, value as OrderStatus)}
                       disabled={loading}
                     >
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
-                        <SelectItem value="delivered">Delivered</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="Καταχωρημένη">Καταχωρημένη</SelectItem>
+                        <SelectItem value="Προς Αποστολή">Προς Αποστολή</SelectItem>
+                        <SelectItem value="Ολοκληρώθηκε">Ολοκληρώθηκε</SelectItem>
+                        <SelectItem value="Ακυρώθηκε">Ακυρώθηκε</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>

@@ -2,29 +2,33 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 
-interface Profile {
-  id: string;
-  user_id: string;
+type UserRole = 'Πελάτης' | 'Διαχειριστής' | 'Υπεύθυνος Παραγγελιών';
+
+interface DbUser {
+  id: number;
+  full_name: string;
   email: string;
-  full_name: string | null;
-  role: 'admin' | 'customer';
   phone_number: string | null;
+  role: UserRole;
+  city: string | null;
+  country: string | null;
+  street: string | null;
+  zip: string | null;
   company_name: string | null;
   afm_number: string | null;
-  address_id: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  profile: Profile | null;
+  dbUser: DbUser | null;
+  dbUserId: number | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
-  // expose a profile refresh
-  refreshProfile: () => Promise<void>;
+  refreshDbUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,24 +36,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchDbUser = async (email: string, fullName?: string) => {
     const { data, error } = await supabase
-      .from('profiles')
+      .from('users')
       .select('*')
-      .eq('user_id', userId)
+      .eq('email', email)
       .single();
     
     if (!error && data) {
-      setProfile(data as Profile);
+      setDbUser(data as DbUser);
+    } else if (error?.code === 'PGRST116') {
+      // User not found in users table - create one
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          full_name: fullName || email.split('@')[0],
+          email: email,
+          role: 'Πελάτης' as UserRole,
+        })
+        .select()
+        .single();
+
+      if (!insertError && newUser) {
+        setDbUser(newUser as DbUser);
+      } else {
+        console.error('Error creating user record:', insertError);
+        setDbUser(null);
+      }
+    } else {
+      setDbUser(null);
     }
   };
 
-  const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
+  const refreshDbUser = async () => {
+    if (user?.email) {
+      await fetchDbUser(user.email);
     }
   };
 
@@ -59,12 +83,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
+        if (session?.user?.email) {
+          const fullName = session.user.user_metadata?.full_name;
           setTimeout(() => {
-            fetchProfile(session.user.id);
+            fetchDbUser(session.user.email!, fullName);
           }, 0);
         } else {
-          setProfile(null);
+          setDbUser(null);
         }
         setLoading(false);
       }
@@ -73,8 +98,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+      if (session?.user?.email) {
+        const fullName = session.user.user_metadata?.full_name;
+        fetchDbUser(session.user.email, fullName);
       }
       setLoading(false);
     });
@@ -83,7 +109,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
+    // First sign up with Supabase Auth
+    const { error: authError, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -93,7 +120,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         },
       },
     });
-    return { error };
+
+    if (authError) {
+      return { error: authError };
+    }
+
+    // Create a user record in the users table
+    const { error: userError } = await supabase
+      .from('users')
+      .insert({
+        full_name: fullName,
+        email: email,
+        role: 'Πελάτης' as UserRole,
+      });
+
+    if (userError) {
+      console.error('Error creating user record:', userError);
+      // Don't fail the signup if user record creation fails
+      // The user might already exist or will be created later
+    }
+
+    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
@@ -108,19 +155,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await supabase.auth.signOut();
   };
 
-  const isAdmin = profile?.role === 'admin';
+  const isAdmin = dbUser?.role === 'Διαχειριστής';
+  const dbUserId = dbUser?.id ?? null;
 
   return (
     <AuthContext.Provider value={{
       user,
       session,
-      profile,
+      dbUser,
+      dbUserId,
       loading,
       signUp,
       signIn,
       signOut,
       isAdmin,
-      refreshProfile,
+      refreshDbUser,
     }}>
       {children}
     </AuthContext.Provider>

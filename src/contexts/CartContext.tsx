@@ -4,13 +4,12 @@ import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/use-toast';
 
 interface CartItem {
-  id: string;
-  product_id: string;
+  product_id: number;
   quantity: number;
   product: {
     name: string;
     price: number;
-    image_url: string;
+    image_url: string | null;
     stock: number;
   };
 }
@@ -18,9 +17,9 @@ interface CartItem {
 interface CartContextType {
   items: CartItem[];
   loading: boolean;
-  addToCart: (productId: string, quantity: number) => Promise<void>;
-  updateQuantity: (productId: string, quantity: number) => Promise<void>;
-  removeFromCart: (productId: string) => Promise<void>;
+  addToCart: (productId: number, quantity: number) => Promise<void>;
+  updateQuantity: (productId: number, quantity: number) => Promise<void>;
+  removeFromCart: (productId: number) => Promise<void>;
   clearCart: () => Promise<void>;
   total: number;
   itemCount: number;
@@ -31,19 +30,18 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, dbUserId } = useAuth();
 
   const fetchCartItems = async () => {
-    if (!user) {
+    if (!user || !dbUserId) {
       setItems([]);
       return;
     }
 
     setLoading(true);
     const { data, error } = await supabase
-      .from('cart_items')
+      .from('cart')
       .select(`
-        id,
         product_id,
         quantity,
         product:products (
@@ -53,7 +51,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           stock
         )
       `)
-      .eq('user_id', user.id);
+      .eq('user_id', dbUserId);
 
     if (error) {
       console.error('Error fetching cart items:', error);
@@ -63,17 +61,23 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         variant: "destructive",
       });
     } else {
-      setItems(data || []);
+      // Map the data to our CartItem interface
+      const cartItems: CartItem[] = (data || []).map((item: any) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        product: item.product
+      }));
+      setItems(cartItems);
     }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchCartItems();
-  }, [user]);
+  }, [user, dbUserId]);
 
-  const addToCart = async (productId: string, quantity: number) => {
-    if (!user) {
+  const addToCart = async (productId: number, quantity: number) => {
+    if (!user || !dbUserId) {
       toast({
         title: "Sign in required",
         description: "Please sign in to add items to cart",
@@ -82,32 +86,56 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    const { error } = await supabase
-      .from('cart_items')
-      .upsert({
-        user_id: user.id,
-        product_id: productId,
-        quantity,
-      });
+    // Check if item already exists in cart
+    const existingItem = items.find(item => item.product_id === productId);
+    
+    if (existingItem) {
+      // Update quantity
+      const { error } = await supabase
+        .from('cart')
+        .update({ quantity: existingItem.quantity + quantity })
+        .eq('user_id', dbUserId)
+        .eq('product_id', productId);
 
-    if (error) {
-      console.error('Error adding to cart:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add item to cart",
-        variant: "destructive",
-      });
+      if (error) {
+        console.error('Error updating cart:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add item to cart",
+          variant: "destructive",
+        });
+        return;
+      }
     } else {
-      toast({
-        title: "Added to cart",
-        description: "Item added successfully",
-      });
-      await fetchCartItems();
+      // Insert new item
+      const { error } = await supabase
+        .from('cart')
+        .insert({
+          user_id: dbUserId,
+          product_id: productId,
+          quantity,
+        });
+
+      if (error) {
+        console.error('Error adding to cart:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add item to cart",
+          variant: "destructive",
+        });
+        return;
+      }
     }
+
+    toast({
+      title: "Added to cart",
+      description: "Item added successfully",
+    });
+    await fetchCartItems();
   };
 
-  const updateQuantity = async (productId: string, quantity: number) => {
-    if (!user) return;
+  const updateQuantity = async (productId: number, quantity: number) => {
+    if (!user || !dbUserId) return;
 
     if (quantity <= 0) {
       await removeFromCart(productId);
@@ -115,9 +143,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const { error } = await supabase
-      .from('cart_items')
+      .from('cart')
       .update({ quantity })
-      .eq('user_id', user.id)
+      .eq('user_id', dbUserId)
       .eq('product_id', productId);
 
     if (error) {
@@ -132,13 +160,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const removeFromCart = async (productId: string) => {
-    if (!user) return;
+  const removeFromCart = async (productId: number) => {
+    if (!user || !dbUserId) return;
 
     const { error } = await supabase
-      .from('cart_items')
+      .from('cart')
       .delete()
-      .eq('user_id', user.id)
+      .eq('user_id', dbUserId)
       .eq('product_id', productId);
 
     if (error) {
@@ -154,12 +182,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const clearCart = async () => {
-    if (!user) return;
+    if (!user || !dbUserId) return;
 
     const { error } = await supabase
-      .from('cart_items')
+      .from('cart')
       .delete()
-      .eq('user_id', user.id);
+      .eq('user_id', dbUserId);
 
     if (error) {
       console.error('Error clearing cart:', error);

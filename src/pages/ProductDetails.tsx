@@ -5,22 +5,48 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/components/ui/use-toast';
+import { Star } from 'lucide-react';
+
+interface ProductTag {
+  tag: {
+    id: number;
+    name: string;
+  };
+}
+
+interface ProductCategory {
+  category: {
+    id: number;
+    name: string;
+    parent_id: number | null;
+  };
+}
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
-  description: string;
+  description: string | null;
   price: number;
   vat: number;
-  image_url: string;
+  image_url: string | null;
   stock: number;
-  categories: {
-    id: string;
+  categoryInfo: {
+    id: number;
     name: string;
-    parent: { id: string; name: string } | null;
+    parent: { id: number; name: string } | null;
   } | null;
   tags: string[];
+}
+
+interface Review {
+  review_id: number;
+  user_name: string;
+  score: number;
+  comment: string | null;
 }
 
 export default function ProductDetails() {
@@ -29,37 +55,256 @@ export default function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const { addToCart } = useCart();
+  const { user, dbUserId } = useAuth();
   const [qty, setQty] = useState(1);
+
+  // Reviews state
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [avgScore, setAvgScore] = useState<number | null>(null);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [newReviewScore, setNewReviewScore] = useState(5);
+  const [newReviewComment, setNewReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [hasUserReviewed, setHasUserReviewed] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch product basic info
+      const { data: productData, error: productError } = await supabase
         .from('products')
-        .select(`
-          id,
-          name,
-          description,
-          price,
-          vat,
-          image_url,
-          stock,
-          categories:category_id (
-            id,
-            name,
-            parent:parent_id ( id, name )
-          ),
-          tags
-        `)
-        .eq('id', id)
+        .select('id, name, description, price, vat, image_url, stock')
+        .eq('id', parseInt(id))
         .single();
 
-      if (!error) setProduct(data as Product);
+      if (productError || !productData) {
+        setLoading(false);
+        return;
+      }
+
+      // Fetch product categories (through junction table)
+      const { data: categoryData } = await supabase
+        .from('products_belong_to_categories')
+        .select(`
+          category:categories (
+            id,
+            name,
+            parent_id
+          )
+        `)
+        .eq('product_id', parseInt(id))
+        .limit(1)
+        .single();
+
+      // Fetch parent category if exists
+      let categoryInfo = null;
+      if (categoryData?.category) {
+        const cat = categoryData.category as { id: number; name: string; parent_id: number | null };
+        if (cat.parent_id) {
+          const { data: parentData } = await supabase
+            .from('categories')
+            .select('id, name')
+            .eq('id', cat.parent_id)
+            .single();
+          
+          categoryInfo = {
+            id: cat.id,
+            name: cat.name,
+            parent: parentData ? { id: parentData.id, name: parentData.name } : null
+          };
+        } else {
+          categoryInfo = {
+            id: cat.id,
+            name: cat.name,
+            parent: null
+          };
+        }
+      }
+
+      // Fetch product tags (through junction table)
+      const { data: tagsData } = await supabase
+        .from('product_discribed_by_tags')
+        .select(`
+          tag:tags (
+            id,
+            name
+          )
+        `)
+        .eq('product_id', parseInt(id));
+
+      const tags = (tagsData || [])
+        .map((t: any) => t.tag?.name)
+        .filter((name: string | null): name is string => name !== null);
+
+      setProduct({
+        ...productData,
+        categoryInfo,
+        tags
+      });
       setLoading(false);
     };
     fetchProduct();
   }, [id]);
+
+  // Fetch reviews for this product
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!id) return;
+      setReviewsLoading(true);
+
+      // Fetch reviews using the user_reviews view
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('user_reviews')
+        .select('review_id, user_name, score, comment')
+        .eq('product_id', parseInt(id));
+
+      if (!reviewsError && reviewsData) {
+        setReviews(reviewsData);
+      }
+
+      // Fetch average score
+      const { data: avgData } = await supabase
+        .from('avg_product_score')
+        .select('avg_score')
+        .eq('product_id', parseInt(id))
+        .single();
+
+      if (avgData?.avg_score) {
+        setAvgScore(Number(avgData.avg_score));
+      }
+
+      // Check if current user has already reviewed
+      if (dbUserId) {
+        const { data: userReviewData } = await supabase
+          .from('reviews')
+          .select('id')
+          .eq('user_id', dbUserId);
+
+        if (userReviewData && userReviewData.length > 0) {
+          // Check if any of those reviews are for this product
+          const reviewIds = userReviewData.map(r => r.id);
+          const { data: productReviewData } = await supabase
+            .from('reviews_belong_to_products')
+            .select('review_id')
+            .eq('product_id', parseInt(id))
+            .in('review_id', reviewIds);
+
+          setHasUserReviewed((productReviewData?.length ?? 0) > 0);
+        }
+      }
+
+      setReviewsLoading(false);
+    };
+
+    fetchReviews();
+  }, [id, dbUserId]);
+
+  const handleSubmitReview = async () => {
+    if (!user || !id) {
+      toast({
+        title: 'Σφάλμα',
+        description: 'Πρέπει να είστε συνδεδεμένοι για να αφήσετε κριτική.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!dbUserId) {
+      toast({
+        title: 'Σφάλμα',
+        description: 'Δεν βρέθηκε ο λογαριασμός σας. Παρακαλώ αποσυνδεθείτε και συνδεθείτε ξανά.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (hasUserReviewed) {
+      toast({
+        title: 'Σφάλμα',
+        description: 'Έχετε ήδη αφήσει κριτική για αυτό το προϊόν.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      // 1) Create the review
+      const { data: reviewData, error: reviewError } = await supabase
+        .from('reviews')
+        .insert({
+          user_id: dbUserId,
+          score: newReviewScore,
+          comment: newReviewComment || null,
+        })
+        .select()
+        .single();
+
+      if (reviewError) throw reviewError;
+
+      // 2) Link review to product
+      const { error: linkError } = await supabase
+        .from('reviews_belong_to_products')
+        .insert({
+          review_id: reviewData.id,
+          product_id: parseInt(id),
+        });
+
+      if (linkError) throw linkError;
+
+      toast({
+        title: 'Επιτυχία',
+        description: 'Η κριτική σας καταχωρήθηκε!',
+      });
+
+      // Reset form and refresh reviews
+      setNewReviewScore(5);
+      setNewReviewComment('');
+      setHasUserReviewed(true);
+
+      // Refresh reviews
+      const { data: newReviewsData } = await supabase
+        .from('user_reviews')
+        .select('review_id, user_name, score, comment')
+        .eq('product_id', parseInt(id));
+
+      if (newReviewsData) setReviews(newReviewsData);
+
+      const { data: newAvgData } = await supabase
+        .from('avg_product_score')
+        .select('avg_score')
+        .eq('product_id', parseInt(id))
+        .single();
+
+      if (newAvgData?.avg_score) setAvgScore(Number(newAvgData.avg_score));
+
+    } catch (error) {
+      console.error('Review error:', error);
+      toast({
+        title: 'Σφάλμα',
+        description: 'Προέκυψε σφάλμα κατά την υποβολή της κριτικής.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const renderStars = (score: number, interactive = false, size = 'w-4 h-4') => {
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`${size} ${star <= score ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} ${interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
+            onClick={interactive ? () => setNewReviewScore(star) : undefined}
+          />
+        ))}
+      </div>
+    );
+  };
 
   const handleAdd = async () => {
     if (!product) return;
@@ -95,7 +340,7 @@ export default function ProductDetails() {
       <div className="grid gap-8 md:grid-cols-2">
         <div className="aspect-square overflow-hidden rounded-lg bg-muted">
           <img
-            src={product.image_url}
+            src={product.image_url || '/placeholder.png'}
             alt={product.name}
             className="h-full w-full object-cover"
           />
@@ -105,28 +350,28 @@ export default function ProductDetails() {
           {/* Breadcrumb: Category → Subcategory */}
           <div className="mb-3 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
-              {product.categories?.parent ? (
+              {product.categoryInfo?.parent ? (
                 <>
                   <Link
-                    to={`/products?category=${product.categories.parent.id}`}
+                    to={`/products?category=${product.categoryInfo.parent.id}`}
                     className="font-medium hover:text-primary"
                   >
-                    {product.categories.parent.name}
+                    {product.categoryInfo.parent.name}
                   </Link>
                   <span>/</span>
                   <Link
-                    to={`/products?category=${product.categories.id}`}
+                    to={`/products?category=${product.categoryInfo.id}`}
                     className="hover:text-primary"
                   >
-                    {product.categories.name}
+                    {product.categoryInfo.name}
                   </Link>
                 </>
-              ) : product.categories ? (
+              ) : product.categoryInfo ? (
                 <Link
-                  to={`/products?category=${product.categories.id}`}
+                  to={`/products?category=${product.categoryInfo.id}`}
                   className="font-medium hover:text-primary"
                 >
-                  {product.categories.name}
+                  {product.categoryInfo.name}
                 </Link>
               ) : null}
             </div>
@@ -214,6 +459,94 @@ export default function ProductDetails() {
 
           
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="mt-12 border-t pt-8">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          Κριτικές
+          {avgScore !== null && (
+            <span className="flex items-center gap-1 text-sm font-normal text-muted-foreground">
+              ({avgScore.toFixed(1)} / 5 • {reviews.length} κριτικ{reviews.length === 1 ? 'ή' : 'ές'})
+            </span>
+          )}
+        </h2>
+
+        {/* Average Score Display */}
+        {avgScore !== null && (
+          <div className="flex items-center gap-2 mb-6">
+            {renderStars(Math.round(avgScore), false, 'w-5 h-5')}
+            <span className="text-lg font-medium">{avgScore.toFixed(1)}</span>
+          </div>
+        )}
+
+        {/* Add Review Form */}
+        {user && !hasUserReviewed && (
+          <div className="mb-8 p-4 border rounded-lg bg-muted/30">
+            <h3 className="font-medium mb-3">Γράψτε μια κριτική</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Βαθμολογία</label>
+                {renderStars(newReviewScore, true, 'w-6 h-6')}
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Σχόλιο (προαιρετικό)</label>
+                <Textarea
+                  value={newReviewComment}
+                  onChange={(e) => setNewReviewComment(e.target.value)}
+                  placeholder="Πείτε μας την εμπειρία σας με αυτό το προϊόν..."
+                  rows={3}
+                />
+              </div>
+              <Button
+                onClick={handleSubmitReview}
+                disabled={submittingReview}
+              >
+                {submittingReview ? 'Υποβολή...' : 'Υποβολή Κριτικής'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!user && (
+          <div className="mb-6 p-4 border rounded-lg bg-muted/30 text-center">
+            <p className="text-muted-foreground">
+              <Link to="/auth" className="text-primary underline">Συνδεθείτε</Link> για να αφήσετε κριτική.
+            </p>
+          </div>
+        )}
+
+        {hasUserReviewed && (
+          <div className="mb-6 p-4 border rounded-lg bg-green-50 text-green-700 text-center">
+            Έχετε ήδη αφήσει κριτική για αυτό το προϊόν. Ευχαριστούμε!
+          </div>
+        )}
+
+        {/* Reviews List */}
+        {reviewsLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ) : reviews.length > 0 ? (
+          <div className="space-y-4">
+            {reviews.map((review) => (
+              <div key={review.review_id} className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">{review.user_name}</span>
+                  {renderStars(review.score)}
+                </div>
+                {review.comment && (
+                  <p className="text-muted-foreground">{review.comment}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-center py-8">
+            Δεν υπάρχουν κριτικές ακόμα. Γίνετε ο πρώτος που θα αφήσει μια κριτική!
+          </p>
+        )}
       </div>
     </div>
   );

@@ -5,12 +5,12 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
-  description: string;
+  description: string | null;
   price: number;
   vat: number;
-  image_url: string;
+  image_url: string | null;
   stock: number;
 }
 
@@ -34,7 +34,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         <Link to={`/products/${product.id}`}>
           <div className="aspect-square mb-4 overflow-hidden rounded-md bg-muted">
             <img
-              src={product.image_url}
+              src={product.image_url || '/placeholder.png'}
               alt={product.name}
               className="w-full h-full object-cover hover:scale-105 transition-transform"
             />

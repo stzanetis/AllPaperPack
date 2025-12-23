@@ -7,17 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
 export default function Account() {
-  const { user, profile, loading, refreshProfile } = useAuth();
+  const { user, dbUser, loading, refreshDbUser } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [afmNumber, setAfmNumber] = useState('');
-  // Address fields (replace addressId editing)
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [street, setStreet] = useState('');
-  const [streetNumber, setStreetNumber] = useState('');
+  const [zip, setZip] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
@@ -25,109 +24,55 @@ export default function Account() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profile || user) {
-      setFullName(profile?.full_name ?? '');
-      setEmail(user?.email ?? profile?.email ?? '');
-      setPhoneNumber(profile?.phone_number ?? '');
-      setCompanyName(profile?.company_name ?? '');
-      setAfmNumber(profile?.afm_number ?? '');
+    if (dbUser || user) {
+      setFullName(dbUser?.full_name ?? '');
+      setEmail(user?.email ?? dbUser?.email ?? '');
+      setPhoneNumber(dbUser?.phone_number ?? '');
+      setCompanyName(dbUser?.company_name ?? '');
+      setAfmNumber(dbUser?.afm_number ?? '');
+      setCountry(dbUser?.country ?? '');
+      setCity(dbUser?.city ?? '');
+      setStreet(dbUser?.street ?? '');
+      setZip(dbUser?.zip ?? '');
     }
-
-    // Load existing address if linked
-    const loadAddress = async () => {
-      if (profile?.address_id) {
-        const { data, error } = await supabase
-          .from('addresses')
-          .select('country, city, street, street_number')
-          .eq('id', profile.address_id)
-          .single();
-        if (!error && data) {
-          setCountry(data.country ?? '');
-          setCity(data.city ?? '');
-          setStreet(data.street ?? '');
-          setStreetNumber(data.street_number ?? '');
-        }
-      } else {
-        setCountry('');
-        setCity('');
-        setStreet('');
-        setStreetNumber('');
-      }
-    };
-    loadAddress();
-  }, [profile, user]);
+  }, [dbUser, user]);
 
   if (!loading && !user) return <Navigate to="/auth" replace />;
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !dbUser) return;
 
     setSaving(true);
     setErr(null);
     setMsg(null);
 
     try {
-      // 1) Update profile basics (no raw address_id editing here)
+      // Update user record in users table
       const { error: upErr } = await supabase
-        .from('profiles')
+        .from('users')
         .update({
           full_name: fullName,
           email,
           phone_number: phoneNumber || null,
           company_name: companyName || null,
           afm_number: afmNumber || null,
+          country: country || null,
+          city: city || null,
+          street: street || null,
+          zip: zip || null,
         })
-        .eq('user_id', user.id);
+        .eq('id', dbUser.id);
       if (upErr) throw upErr;
 
-      // 2) Upsert address (create if none, otherwise update existing)
-      const hasAnyAddressInput =
-        country.trim() || city.trim() || street.trim() || streetNumber.trim();
-
-      if (hasAnyAddressInput) {
-        if (profile?.address_id) {
-          const { error: addrUpdateErr } = await supabase
-            .from('addresses')
-            .update({
-              country: country || '',
-              city: city || '',
-              street: street || '',
-              street_number: streetNumber || '',
-            })
-            .eq('id', profile.address_id);
-          if (addrUpdateErr) throw addrUpdateErr;
-        } else {
-          const { data: newAddr, error: addrInsertErr } = await supabase
-            .from('addresses')
-            .insert({
-              user_id: user.id,            // <- pass owner
-              country: country || '',
-              city: city || '',
-              street: street || '',
-              street_number: streetNumber || '',
-            })
-            .select('id')
-            .single();
-          if (addrInsertErr) throw addrInsertErr;
-
-          // Link the new address to the profile
-          const { error: linkErr } = await supabase
-            .from('profiles')
-            .update({ address_id: newAddr?.id })
-            .eq('user_id', user.id);
-          if (linkErr) throw linkErr;
-        }
-      }
-
-      // 3) Change email in auth if needed (triggers confirmation)
+      // Change email in auth if needed (triggers confirmation)
       if (email && email !== user.email) {
         const { error: authErr } = await supabase.auth.updateUser({ email });
         if (authErr) throw authErr;
         setMsg('Στάλθηκε email επιβεβαίωσης για την αλλαγή email.');
       }
 
-      // 4) Change password if provided
+      // Change password if provided
       if (newPassword) {
         if (newPassword !== confirmPassword) {
           throw new Error('Οι κωδικοί δεν ταιριάζουν.');
@@ -143,7 +88,7 @@ export default function Account() {
         setMsg('Τα στοιχεία ενημερώθηκαν.');
       }
 
-      await refreshProfile();
+      await refreshDbUser();
     } catch (e: any) {
       setErr(e.message || 'Προέκυψε σφάλμα.');
     } finally {
@@ -190,11 +135,11 @@ export default function Account() {
             </div>
             <div className="md:col-span-1">
               <Label htmlFor="street">Οδός</Label>
-              <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Παράδειγμα" />
+              <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Παράδειγμα 123" />
             </div>
             <div className="md:col-span-1">
-              <Label htmlFor="streetNumber">Αριθμός</Label>
-              <Input id="streetNumber" value={streetNumber} onChange={(e) => setStreetNumber(e.target.value)} placeholder="123" />
+              <Label htmlFor="zip">Τ.Κ.</Label>
+              <Input id="zip" value={zip} onChange={(e) => setZip(e.target.value)} placeholder="12345" />
             </div>
           </div>
         </section>

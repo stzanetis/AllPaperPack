@@ -7,20 +7,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useSearchParams } from 'react-router-dom';
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
-  description: string;
+  description: string | null;
   price: number;
   vat: number;
-  image_url: string;
+  image_url: string | null;
   stock: number;
-  categories: { name: string } | null;
+  category_name: string | null;
 }
 
 interface Category {
-  id: string;
+  id: number;
   name: string;
-  parent_id: string | null; // <-- add parent_id so we can find children
+  parent_id: number | null;
 }
 
 export default function Products() {
@@ -41,28 +41,30 @@ export default function Products() {
   const fetchProducts = async () => {
     setLoading(true);
 
-    // Base query
+    // Use view_products_flat which has category info joined
     let query = supabase
-      .from('products')
+      .from('view_products_flat')
       .select(`
-        id,
-        name,
+        product_id,
+        product_name,
         description,
         price,
         vat,
         image_url,
         stock,
-        categories:category_id (name)
-      `)
-      .eq('is_active', true);
+        category_id,
+        category_name,
+        parent_category_id
+      `);
 
     // If a parent category is selected, include its subcategories too
     if (selectedCategory !== 'all') {
+      const categoryId = parseInt(selectedCategory);
       const childIds = categories
-        .filter((c) => c.parent_id === selectedCategory)
+        .filter((c) => c.parent_id === categoryId)
         .map((c) => c.id);
 
-      const includeIds = [selectedCategory, ...childIds];
+      const includeIds = [categoryId, ...childIds];
       query = query.in('category_id', includeIds);
     }
 
@@ -70,7 +72,18 @@ export default function Products() {
     if (error) {
       console.error('Error fetching products:', error);
     } else {
-      setProducts(data || []);
+      // Map view columns to component's expected shape
+      const mappedProducts: Product[] = (data || []).map(p => ({
+        id: p.product_id,
+        name: p.product_name,
+        description: p.description,
+        price: p.price,
+        vat: p.vat,
+        image_url: p.image_url,
+        stock: p.stock,
+        category_name: p.category_name
+      }));
+      setProducts(mappedProducts);
     }
     setLoading(false);
   };
@@ -78,7 +91,7 @@ export default function Products() {
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
-      .select('id, name, parent_id') // <-- fetch parent_id
+      .select('id, name, parent_id')
       .order('name');
 
     if (error) {
@@ -96,7 +109,7 @@ export default function Products() {
   // Fetch products whenever selected category or categories list changes
   useEffect(() => {
     fetchProducts();
-  }, [selectedCategory, categories]); // <-- depend on categories so children are included once loaded
+  }, [selectedCategory, categories]);
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -135,7 +148,7 @@ export default function Products() {
               <SelectContent>
                 <SelectItem value="all">Όλες οι Κατηγορίες</SelectItem>
                 {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
+                  <SelectItem key={category.id} value={String(category.id)}>
                     {category.name}
                   </SelectItem>
                 ))}

@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
 interface Category {
-  id: string;
+  id: number;
   name: string;
   description: string | null;
-  parent_id: string | null;
+  parent_id: number | null;
 }
 
 const Index = () => {
@@ -56,15 +56,7 @@ const Index = () => {
             </Link>
           ))}
         </div>
-
-        <div className="mb-6 flex items-center gap-3">
-          <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
-          <h1 className="font-tinos text-[#0a3e06] text-3xl font-bold">Προτεινόμενα Προϊόντα</h1>
-          <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
-        </div>
-
       </div>
-      <div className="h-24"/>
     </div>
   );
 };

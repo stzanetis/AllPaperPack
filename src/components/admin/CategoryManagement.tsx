@@ -11,12 +11,11 @@ import { toast } from '@/components/ui/use-toast';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 
 interface Category {
-  id: string;
+  id: number;
   name: string;
   description: string | null;
-  created_at: string;
-  parent_id: string | null;
-  parent?: { id: string; name: string } | null;
+  parent_id: number | null;
+  parent_name?: string | null;
 }
 
 export const CategoryManagement = () => {
@@ -28,14 +27,23 @@ export const CategoryManagement = () => {
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
-      .select('id,name,description,created_at,parent_id,parent:parent_id(id,name)')
-      .order('created_at', { ascending: false });
+      .select('id, name, description, parent_id')
+      .order('name', { ascending: true });
 
     if (error) {
       console.error('Error fetching categories:', error);
-    } else {
-      setCategories((data as any) || []);
+      return;
     }
+
+    // Map parent names manually since we can't do self-join easily
+    const categoriesWithParent = (data || []).map(cat => ({
+      ...cat,
+      parent_name: cat.parent_id 
+        ? data?.find(p => p.id === cat.parent_id)?.name || null
+        : null
+    }));
+
+    setCategories(categoriesWithParent);
   };
 
   useEffect(() => {
@@ -48,7 +56,7 @@ export const CategoryManagement = () => {
 
     const formData = new FormData(e.currentTarget);
     const parentRaw = (formData.get('parent_id') as string) || '';
-    const parent_id = parentRaw === '' ? null : parentRaw;
+    const parent_id = parentRaw === '' ? null : parseInt(parentRaw, 10);
 
     const categoryData = {
       name: formData.get('name') as string,
@@ -72,14 +80,14 @@ export const CategoryManagement = () => {
 
     if (error) {
       toast({
-        title: "Error",
+        title: "Σφάλμα",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Success",
-        description: `Category ${editingCategory ? 'updated' : 'created'} successfully`,
+        title: "Επιτυχία",
+        description: `Η κατηγορία ${editingCategory ? 'ενημερώθηκε' : 'δημιουργήθηκε'} επιτυχώς`,
       });
       setDialogOpen(false);
       setEditingCategory(null);
@@ -89,8 +97,8 @@ export const CategoryManagement = () => {
     setLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+  const handleDelete = async (id: number) => {
+    if (!confirm('Είστε σίγουροι ότι θέλετε να διαγράψετε αυτή την κατηγορία;')) return;
 
     const { error } = await supabase
       .from('categories')
@@ -99,14 +107,14 @@ export const CategoryManagement = () => {
 
     if (error) {
       toast({
-        title: "Error",
+        title: "Σφάλμα",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Success",
-        description: "Category deleted successfully",
+        title: "Επιτυχία",
+        description: "Η κατηγορία διαγράφηκε επιτυχώς",
       });
       fetchCategories();
     }
@@ -122,7 +130,7 @@ export const CategoryManagement = () => {
     setDialogOpen(false);
   };
 
-  const parentOptions = (currentId?: string) =>
+  const parentOptions = (currentId?: number) =>
     categories.filter(c => c.id !== currentId); // simple self-exclude
 
   return (
@@ -139,7 +147,7 @@ export const CategoryManagement = () => {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>
-                {editingCategory ? 'Edit Category' : 'Add New Category'}
+                {editingCategory ? 'Επεξεργασία Κατηγορίας' : 'Νέα Κατηγορία'}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -161,16 +169,16 @@ export const CategoryManagement = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="parent_id">Προέλευση Κατηγορίας (προεραιτικό)</Label>
+                <Label htmlFor="parent_id">Γονική Κατηγορία (προαιρετικό)</Label>
                 <select
                   id="parent_id"
                   name="parent_id"
-                  defaultValue={editingCategory?.parent_id ?? ''}
+                  defaultValue={editingCategory?.parent_id?.toString() ?? ''}
                   className="w-full border rounded-md h-10 px-3 text-sm bg-background"
                 >
-                  <option value="">— None —</option>
+                  <option value="">— Καμία —</option>
                   {parentOptions(editingCategory?.id).map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option key={c.id} value={c.id.toString()}>
                       {c.name}
                     </option>
                   ))}
@@ -180,7 +188,7 @@ export const CategoryManagement = () => {
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Saving...' : editingCategory ? 'Ενημέρωση' : 'Προσθήκη'}
+                {loading ? 'Αποθήκευση...' : editingCategory ? 'Ενημέρωση' : 'Προσθήκη'}
               </Button>
             </form>
           </DialogContent>
@@ -193,8 +201,7 @@ export const CategoryManagement = () => {
               <TableRow>
                 <TableHead>Όνομα</TableHead>
                 <TableHead>Περιγραφή</TableHead>
-                <TableHead>Προέλευση</TableHead>
-                <TableHead>Δημιουργήθηκε</TableHead>
+                <TableHead>Γονική Κατηγορία</TableHead>
                 <TableHead>Ενέργειες</TableHead>
               </TableRow>
             </TableHeader>
@@ -203,10 +210,7 @@ export const CategoryManagement = () => {
                 <TableRow key={category.id}>
                   <TableCell className="font-medium">{category.name}</TableCell>
                   <TableCell>{category.description || 'Χωρίς περιγραφή'}</TableCell>
-                  <TableCell>{category.parent?.name ?? '—'}</TableCell>
-                  <TableCell>
-                    {new Date(category.created_at).toLocaleDateString()}
-                  </TableCell>
+                  <TableCell>{category.parent_name ?? '—'}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Button
