@@ -1,0 +1,237 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { toast } from '@/components/ui/use-toast';
+import { Plus, Edit, Trash2 } from 'lucide-react';
+
+interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  parent_id: string | null;
+  parent?: { id: string; name: string } | null;
+}
+
+export const CategoryManagement = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('id,name,description,created_at,parent_id,parent:parent_id(id,name)')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching categories:', error);
+    } else {
+      setCategories((data as any) || []);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const parentRaw = (formData.get('parent_id') as string) || '';
+    const parent_id = parentRaw === '' ? null : parentRaw;
+
+    const categoryData = {
+      name: formData.get('name') as string,
+      description: (formData.get('description') as string) || null,
+      parent_id,
+    };
+
+    let error;
+    if (editingCategory) {
+      const { error: updateError } = await supabase
+        .from('categories')
+        .update(categoryData)
+        .eq('id', editingCategory.id);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase
+        .from('categories')
+        .insert(categoryData);
+      error = insertError;
+    }
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: `Category ${editingCategory ? 'updated' : 'created'} successfully`,
+      });
+      setDialogOpen(false);
+      setEditingCategory(null);
+      fetchCategories();
+    }
+
+    setLoading(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this category?')) return;
+
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+      fetchCategories();
+    }
+  };
+
+  const handleEdit = (category: Category) => {
+    setEditingCategory(category);
+    setDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingCategory(null);
+    setDialogOpen(false);
+  };
+
+  const parentOptions = (currentId?: string) =>
+    categories.filter(c => c.id !== currentId); // simple self-exclude
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Διαχείριση Κατηγοριών</CardTitle>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Καινούργια Κατηγορία
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {editingCategory ? 'Edit Category' : 'Add New Category'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Όνομα</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  required
+                  defaultValue={editingCategory?.name || ''}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Περιγραφή</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingCategory?.description || ''}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="parent_id">Προέλευση Κατηγορίας (προεραιτικό)</Label>
+                <select
+                  id="parent_id"
+                  name="parent_id"
+                  defaultValue={editingCategory?.parent_id ?? ''}
+                  className="w-full border rounded-md h-10 px-3 text-sm bg-background"
+                >
+                  <option value="">— None —</option>
+                  {parentOptions(editingCategory?.id).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Αφήστε κενό για βασική κατηγορία. Επιλέξτε άλλη κατηγορία για να κάνετε αυτήν μια υποκατηγορία.
+                </p>
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Saving...' : editingCategory ? 'Ενημέρωση' : 'Προσθήκη'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Όνομα</TableHead>
+                <TableHead>Περιγραφή</TableHead>
+                <TableHead>Προέλευση</TableHead>
+                <TableHead>Δημιουργήθηκε</TableHead>
+                <TableHead>Ενέργειες</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categories.map((category) => (
+                <TableRow key={category.id}>
+                  <TableCell className="font-medium">{category.name}</TableCell>
+                  <TableCell>{category.description || 'Χωρίς περιγραφή'}</TableCell>
+                  <TableCell>{category.parent?.name ?? '—'}</TableCell>
+                  <TableCell>
+                    {new Date(category.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(category)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(category.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};

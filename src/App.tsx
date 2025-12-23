@@ -1,46 +1,53 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase/client';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { CartProvider } from "@/contexts/CartContext";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 
-interface Category {
-  id: string;
-  name: string;
-  description: string | null;
-  parent_id: string | null;
-}
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Products from "./pages/Products";
+import Cart from "./pages/Cart";
+import Contact from "./pages/Contact";
+import Account from "./pages/Account";
+import Checkout from "./pages/Checkout";
+import AdminDashboard from "./pages/admin/Dashboard";
+import NotFound from "./pages/NotFound";
+import ProductDetails from "./pages/ProductDetails";
 
-function App() {
-  const [categories, setCategories] = useState<Category[]>([]);
+const queryClient = new QueryClient();
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id,name,description,parent_id')
-        .is('parent_id', null) // only primary categories
-        .order('name');
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <AuthProvider>
+        <CartProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Header />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/products/:id" element={<ProductDetails />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/account" element={<Account />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Footer />
+          </BrowserRouter>
+        </CartProvider>
+      </AuthProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
-      if (!error && data) {
-        setCategories(data as Category[]);
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
-  return (
-    <div>
-      <h1>TEST</h1>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 mb-12">
-        {categories.map((category) => (
-          <div key={category.id}>
-            <h1 className="font-tinos text-xl font-medium">{category.name}</h1>
-            <h2 className="text-sm break-words leading-snug">{category.description}</h2>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-export default App
+export default App;
