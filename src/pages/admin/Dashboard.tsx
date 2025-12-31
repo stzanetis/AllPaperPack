@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductManagement } from '@/components/admin/ProductManagement';
 import { CategoryManagement } from '@/components/admin/CategoryManagement';
+import { TagManagement } from '@/components/admin/TagManagement';
 import { OrderManagement } from '@/components/admin/OrderManagement';
+import { PickupLocationManagement } from '@/components/admin/PickupLocationManagement';
 import { Package, ShoppingCart, Users, DollarSign } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
@@ -17,7 +19,7 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, dbUser, loading } = useAuth();
   const [stats, setStats] = useState<Stats>({
     totalProducts: 0,
     totalOrders: 0,
@@ -41,9 +43,9 @@ export default function AdminDashboard() {
 
       // Get customer count
       const { count: customerCount } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*', { count: 'exact', head: true })
-        .eq('role', 'customer');
+        .eq('role', 'Πελάτης');
 
       setStats({
         totalProducts: productCount || 0,
@@ -70,61 +72,91 @@ export default function AdminDashboard() {
     return <Navigate to="/" replace />;
   }
 
+  const isNormalAdmin = dbUser?.role === 'Διαχειριστής';
+  const isOrdersAdmin = dbUser?.role === 'Υπεύθυνος Παραγγελιών';
+
   return (
     <div className="container mx-auto px-4 py-8">
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Προϊόντα</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
-          </CardContent>
-        </Card>
+      {/* Stats Cards - Show for normal admin only */}
+      {isNormalAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Προϊόντα</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalProducts}</div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Παραγγελίες</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Παραγγελίες</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalOrders}</div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Χρήστες</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCustomers}</div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Χρήστες</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCustomers}</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Management Tabs */}
-      <Tabs defaultValue="products" className="space-y-4">
+      <Tabs defaultValue={isOrdersAdmin ? "orders" : "products"} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="products">Προϊόντα</TabsTrigger>
-          <TabsTrigger value="categories">Κατηγορίες</TabsTrigger>
-          <TabsTrigger value="orders">Παραγγελίες</TabsTrigger>
+          {isNormalAdmin && (
+            <>
+              <TabsTrigger value="products">Προϊόντα</TabsTrigger>
+              <TabsTrigger value="categories">Κατηγορίες</TabsTrigger>
+              <TabsTrigger value="tags">Ετικέτες</TabsTrigger>
+            </>
+          )}
+          {isOrdersAdmin && (
+            <>
+              <TabsTrigger value="orders">Παραγγελίες</TabsTrigger>
+              <TabsTrigger value="pickup-locations">Σημεία Παραλαβής</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
-        <TabsContent value="products">
-          <ProductManagement onStatsUpdate={fetchStats} />
-        </TabsContent>
+        {isNormalAdmin && (
+          <>
+            <TabsContent value="products">
+              <ProductManagement onStatsUpdate={fetchStats} />
+            </TabsContent>
 
-        <TabsContent value="categories">
-          <CategoryManagement />
-        </TabsContent>
+            <TabsContent value="categories">
+              <CategoryManagement />
+            </TabsContent>
 
-        <TabsContent value="orders">
-          <OrderManagement />
-        </TabsContent>
+            <TabsContent value="tags">
+              <TagManagement />
+            </TabsContent>
+          </>
+        )}
+
+        {isOrdersAdmin && (
+          <>
+            <TabsContent value="orders">
+              <OrderManagement />
+            </TabsContent>
+            <TabsContent value="pickup-locations">
+              <PickupLocationManagement />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   );

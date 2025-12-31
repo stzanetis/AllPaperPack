@@ -15,6 +15,17 @@ export default function Cart() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Calculate VAT and totals
+  const { subtotal, vatAmount, totalWithVat } = (() => {
+    const subtotal = total;
+    const vatAmount = items.reduce((sum, item) => {
+      const itemTotal = item.product.price * item.quantity;
+      return sum + (itemTotal * item.product.vat / 100);
+    }, 0);
+    const totalWithVat = subtotal + vatAmount;
+    return { subtotal, vatAmount, totalWithVat };
+  })();
+
   // Remove order placement from Cart; just navigate to checkout
   const handleGoToCheckout = () => {
     if (!user || items.length === 0) return;
@@ -24,7 +35,7 @@ export default function Cart() {
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="font-tinos text-3xl text-[#0a3e06] font-semibold text-center mb-2">Καλάθι</h1>
+        <h1 className="font-tinos text-4xl text-[#0a3e06] font-semibold text-center mb-2">Καλάθι</h1>
         <p className="mb-72 text-muted-foreground">Συνδεθείτε για να δείτε το καλάθι σας.</p>
       </div>
     );
@@ -42,7 +53,7 @@ export default function Cart() {
   if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="font-tinos text-3xl text-[#0a3e06] font-semibold text-center mb-2">Καλάθι</h1>
+        <h1 className="font-tinos text-4xl text-[#0a3e06] font-semibold text-center mb-2">Καλάθι</h1>
         <p className="text-muted-foreground mb-4">Το καλάθι σας είναι άδειο.</p>
         <Button className="mb-52" onClick={() => navigate('/products')}>
           Συνέχεια Αγορών
@@ -52,9 +63,10 @@ export default function Cart() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="font-tinos text-3xl text-[#0a3e06] font-semibold text-center py-4 mb-4">Καλάθι</h1>
-      
+    <div className="container mx-auto px-4 py-8 mb-16">
+      <h1 className="font-tinos text-4xl text-[#0a3e06] font-semibold text-center pt-4">Καλάθι</h1>
+      <div className="border-t border-gray-300 my-4 mb-8" />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => (
@@ -76,6 +88,7 @@ export default function Cart() {
                     <Button
                       variant="outline"
                       size="icon"
+                      type="button"
                       onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
                     >
                       <Minus className="h-4 w-4" />
@@ -91,6 +104,7 @@ export default function Cart() {
                     <Button
                       variant="outline"
                       size="icon"
+                      type="button"
                       onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
                       disabled={item.quantity >= item.product.stock}
                     >
@@ -105,7 +119,7 @@ export default function Cart() {
                       variant="ghost"
                       size="sm"
                       onClick={() => removeFromCart(item.product_id)}
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:bg-red-400 rounded-full hover:text-white"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -119,18 +133,22 @@ export default function Cart() {
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Σύνοψη Παραγγελίας</CardTitle>
+              <CardTitle>Σύνολο Παραγγελίας</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span>Μερικό Σύνολο</span>
-                  <span>€{total.toFixed(2)}</span>
+                  <span>Υποσύνολο</span>
+                  <span>€{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>ΦΠΑ</span>
+                  <span>€{vatAmount.toFixed(2)}</span>
                 </div>
                 <hr />
                 <div className="flex justify-between font-semibold">
                   <span>Σύνολο</span>
-                  <span>€{total.toFixed(2)}</span>
+                  <span>€{totalWithVat.toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>
@@ -139,7 +157,7 @@ export default function Cart() {
                 className="w-full" 
                 onClick={handleGoToCheckout}
               >
-                Μετάβαση στο Checkout
+                Μετάβαση για Ολοκλήρωση Παραγγελίας
               </Button>
               <Button 
                 variant="outline" 

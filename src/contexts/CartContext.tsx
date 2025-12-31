@@ -11,6 +11,7 @@ interface CartItem {
     price: number;
     image_url: string | null;
     stock: number;
+    vat: number;
   };
 }
 
@@ -48,7 +49,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           name,
           price,
           image_url,
-          stock
+          stock,
+          vat
         )
       `)
       .eq('user_id', dbUserId);
@@ -56,9 +58,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) {
       console.error('Error fetching cart items:', error);
       toast({
-        title: "Error",
-        description: "Failed to load cart items",
+        title: "Σφάλμα φόρτωσης καλαθιού",
+        description: "Αδυναμία φόρτωσης προϊόντων καλαθιού",
         variant: "destructive",
+        duration: 1000,
       });
     } else {
       // Map the data to our CartItem interface
@@ -79,9 +82,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const addToCart = async (productId: number, quantity: number) => {
     if (!user || !dbUserId) {
       toast({
-        title: "Sign in required",
-        description: "Please sign in to add items to cart",
+        title: "Σφάλμα σύνδεσης",
+        description: "Συνδεθείτε για να προσθέσετε προϊόντα στο καλάθι σας",
         variant: "destructive",
+        duration: 1000,
       });
       return;
     }
@@ -100,9 +104,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         console.error('Error updating cart:', error);
         toast({
-          title: "Error",
-          description: "Failed to add item to cart",
+          title: "Σφάλμα",
+          description: "Αποτυχία προσθήκης προϊόντος στο καλάθι",
           variant: "destructive",
+          duration: 1000,
         });
         return;
       }
@@ -119,18 +124,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         console.error('Error adding to cart:', error);
         toast({
-          title: "Error",
-          description: "Failed to add item to cart",
+          title: "Σφάλμα",
+          description: "Αποτυχία προσθήκης προϊόντος στο καλάθι",
           variant: "destructive",
+          duration: 1000,
         });
         return;
       }
     }
-
-    toast({
-      title: "Added to cart",
-      description: "Item added successfully",
-    });
     await fetchCartItems();
   };
 
@@ -142,6 +143,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    // Optimistic update
+    setItems(prev => prev.map(item =>
+      item.product_id === productId ? { ...item, quantity } : item
+    ));
+
     const { error } = await supabase
       .from('cart')
       .update({ quantity })
@@ -151,17 +157,21 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) {
       console.error('Error updating quantity:', error);
       toast({
-        title: "Error",
-        description: "Failed to update quantity",
+        title: "Σφάλμα",
+        description: "Αποτυχία ενημέρωσης ποσότητας",
         variant: "destructive",
+        duration: 1000,
       });
-    } else {
+      // Revert optimistic update
       await fetchCartItems();
     }
   };
 
   const removeFromCart = async (productId: number) => {
     if (!user || !dbUserId) return;
+
+    // Optimistically remove from local state first
+    setItems(prevItems => prevItems.filter(item => item.product_id !== productId));
 
     const { error } = await supabase
       .from('cart')
@@ -172,11 +182,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) {
       console.error('Error removing from cart:', error);
       toast({
-        title: "Error",
-        description: "Failed to remove item",
+        title: "Σφάλμα",
+        description: "Αποτυχία αφαίρεσης προϊόντος από το καλάθι",
         variant: "destructive",
+        duration: 1000,
       });
-    } else {
+      // Revert the optimistic update on error
       await fetchCartItems();
     }
   };
@@ -192,9 +203,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) {
       console.error('Error clearing cart:', error);
       toast({
-        title: "Error",
-        description: "Failed to clear cart",
+        title: "Σφάλμα",
+        description: "Αποτυχία εκκαθάρισης καλαθιού",
         variant: "destructive",
+        duration: 1000,
       });
     } else {
       setItems([]);

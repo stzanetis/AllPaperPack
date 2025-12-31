@@ -4,13 +4,13 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { useEffect, useState, useRef, useCallback } from 'react'; // + useEffect/useState
-import { supabase } from '@/lib/supabase/client'; // + supabase
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { supabase } from '@/lib/supabase/client';
 
 type Category = { id: string; name: string; parent_id: string | null };
 
 export const Header = () => {
-  const { user, isAdmin, signOut, profile } = useAuth();
+  const { user, isAdmin, signOut, dbUser } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
 
@@ -39,7 +39,6 @@ export const Header = () => {
     navigate('/');
   };
 
-  // hover-intent: keep open while hovering trigger or dropdown
   const closeTimer = useRef<number | null>(null);
   const openMenu = useCallback(() => {
     if (closeTimer.current) {
@@ -149,14 +148,14 @@ export const Header = () => {
                   <Link to="/account">
                     <Button className="bg-[#eaf2d5] hover:bg-primary border-[#eaf2d5] rounded-full" variant="outline" size="sm">
                       <User className="h-4 w-4" />
-                      <span className="text-sm">{profile?.full_name || user.email}</span>
+                      <span className="text-sm">{dbUser?.full_name || user.email}</span>
                     </Button>
                   </Link>
 
                   {isAdmin && (
                     <Link to="/admin">
                       <Button className="bg-[#eaf2d5] hover:bg-primary border-[#eaf2d5] rounded-full" variant="outline" size="sm">
-                        Admin Panel
+                        Dashboard
                       </Button>
                     </Link>
                   )}

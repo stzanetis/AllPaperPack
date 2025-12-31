@@ -26,11 +26,12 @@ ${message}`;
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-12 mb-16">
       <h1 className="font-tinos text-3xl text-[#0a3e06] font-semibold text-center mb-2">Επικοινωνία</h1>
       <p className="text-muted-foreground text-center max-w-2xl mx-auto">
         Επικοινωνήστε μαζί μας για οτιδήποτε χρειάζεστε. Θα χαρούμε να σας βοηθήσουμε.
       </p>
+      <div className="border-t border-gray-300 my-4" />
 
       <div className="mt-10 grid gap-10 md:grid-cols-2">
         {/* Info */}
@@ -39,7 +40,7 @@ ${message}`;
             <MapPin className="h-5 w-5 text-primary mt-1" />
             <div>
               <div className="font-medium">Διεύθυνση</div>
-              <div className="text-muted-foreground">Λ. Παράδειγμα 123, Αθήνα</div>
+              <div className="text-muted-foreground">Λ. Παράδειγμα 123, Γιαννιτσά</div>
             </div>
           </div>
           <div className="flex items-start gap-3">

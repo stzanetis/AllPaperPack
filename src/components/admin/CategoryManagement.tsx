@@ -217,6 +217,7 @@ export const CategoryManagement = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(category)}
+                        className="rounded-full hover:bg-primary"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -224,7 +225,7 @@ export const CategoryManagement = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDelete(category.id)}
-                        className="text-destructive hover:text-destructive"
+                        className="text-destructive hover:bg-red-400 rounded-full hover:text-white"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

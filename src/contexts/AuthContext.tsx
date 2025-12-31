@@ -155,7 +155,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await supabase.auth.signOut();
   };
 
-  const isAdmin = dbUser?.role === 'Διαχειριστής';
+  const isAdmin = dbUser?.role === 'Διαχειριστής' || dbUser?.role === 'Υπεύθυνος Παραγγελιών';
   const dbUserId = dbUser?.id ?? null;
 
   return (

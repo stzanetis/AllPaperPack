@@ -76,7 +76,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-md">
+    <div className="container mx-auto px-4 py-8 mb-32 mt-16 max-w-md">
       <Tabs defaultValue="signin" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="signin">Σύνδεση</TabsTrigger>

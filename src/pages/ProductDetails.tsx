@@ -336,9 +336,9 @@ export default function ProductDetails() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-10">
+    <div className="container mx-auto px-4 py-10 mb-32">
       <div className="grid gap-8 md:grid-cols-2">
-        <div className="aspect-square overflow-hidden rounded-lg bg-muted">
+        <div className="aspect-square overflow-hidden rounded-lg bg-muted max-w-lg">
           <img
             src={product.image_url || '/placeholder.png'}
             alt={product.name}

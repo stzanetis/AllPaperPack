@@ -49,19 +49,19 @@ export default function Account() {
 
     try {
       // Update user record in users table
-      const { error: upErr } = await supabase
-        .from('users')
-        .update({
-          full_name: fullName,
-          email,
-          phone_number: phoneNumber || null,
-          company_name: companyName || null,
-          afm_number: afmNumber || null,
-          country: country || null,
-          city: city || null,
-          street: street || null,
-          zip: zip || null,
-        })
+      const updateData = {
+        full_name: fullName,
+        email,
+        phone_number: phoneNumber || null,
+        company_name: companyName || null,
+        afm_number: afmNumber || null,
+        country: country || null,
+        city: city || null,
+        street: street || null,
+        zip: zip || null,
+      };
+      const { error: upErr } = await (supabase.from('users') as any)
+        .update(updateData)
         .eq('id', dbUser.id);
       if (upErr) throw upErr;
 
@@ -98,7 +98,8 @@ export default function Account() {
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-4xl">
-      <h1 className="text-2xl md:text-3xl font-semibold mb-6">Ο λογαριασμός μου</h1>
+      <h1 className="font-tinos text-4xl text-[#0a3e06] font-semibold">Ο λογαριασμός μου</h1>
+      <div className="border-t border-gray-300 my-4 mb-8" />
 
       <form onSubmit={handleSave} className="grid gap-8 md:grid-cols-2">
         {/* Column 1: Στοιχεία προφίλ */}
@@ -160,17 +161,15 @@ export default function Account() {
         </section>
 
         {/* Column 2 (second row): Αλλαγή κωδικού */}
-        <section className="space-y-4">
+        <section className="space-y-4 border rounded-md p-4 bg-primary/15 -mt-24">
           <h2 className="text-lg font-medium">Αλλαγή κωδικού</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="newPassword">Νέος κωδικός</Label>
-              <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
-            </div>
-            <div>
-              <Label htmlFor="confirmPassword">Επιβεβαίωση νέου κωδικού</Label>
-              <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
-            </div>
+          <div>
+            <Label htmlFor="newPassword">Νέος κωδικός</Label>
+            <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
+          </div>
+          <div>
+            <Label htmlFor="confirmPassword">Επιβεβαίωση νέου κωδικού</Label>
+            <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
           </div>
         </section>
 

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 
@@ -22,9 +23,15 @@ interface Product {
   stock: number;
   category_name: string | null;
   category_id: number | null;
+  tags: { id: number; name: string }[];
 }
 
 interface Category {
+  id: number;
+  name: string;
+}
+
+interface Tag {
   id: number;
   name: string;
 }
@@ -36,21 +43,34 @@ interface ProductManagementProps {
 export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const fetchProducts = async () => {
-    // Use view_products_flat which has category info
-    const { data, error } = await supabase
+    // Fetch products with category info
+    const { data: productsData, error: productsError } = await supabase
       .from('view_products_flat')
       .select('product_id, product_name, description, price, vat, image_url, stock, category_id, category_name')
       .order('product_id', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching products:', error);
-    } else {
-      const mappedProducts: Product[] = (data || []).map(p => ({
+    if (productsError) {
+      console.error('Error fetching products:', productsError);
+      return;
+    }
+
+    // Fetch tags for each product
+    const productsWithTags: Product[] = [];
+    for (const p of productsData || []) {
+      const { data: tagsData, error: tagsError } = await supabase
+        .from('product_discribed_by_tags')
+        .select('tags(id, name)')
+        .eq('product_id', p.product_id);
+
+      const productTags = tagsError ? [] : (tagsData?.map(t => t.tags).filter(Boolean) as { id: number; name: string }[]) || [];
+
+      productsWithTags.push({
         id: p.product_id,
         name: p.product_name,
         description: p.description,
@@ -59,10 +79,12 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
         image_url: p.image_url,
         stock: p.stock,
         category_name: p.category_name,
-        category_id: p.category_id
-      }));
-      setProducts(mappedProducts);
+        category_id: p.category_id,
+        tags: productTags
+      });
     }
+
+    setProducts(productsWithTags);
   };
 
   const fetchCategories = async () => {
@@ -78,9 +100,23 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
     }
   };
 
+  const fetchTags = async () => {
+    const { data, error } = await supabase
+      .from('tags')
+      .select('id, name')
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching tags:', error);
+    } else {
+      setTags(data || []);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchTags();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -97,8 +133,10 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
       stock: parseInt(formData.get('stock') as string),
     };
     const categoryId = parseInt(formData.get('category_id') as string);
+    const selectedTagIds = formData.getAll('tags').map(id => parseInt(id as string));
 
     let error;
+    let productId: number;
     if (editingProduct) {
       // Update product
       const { error: updateError } = await supabase
@@ -106,6 +144,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
         .update(productData)
         .eq('id', editingProduct.id);
       error = updateError;
+      productId = editingProduct.id;
 
       // Update category relationship if changed
       if (!error && categoryId && categoryId !== editingProduct.category_id) {
@@ -128,12 +167,33 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
         .select()
         .single();
       error = insertError;
+      productId = newProduct?.id;
 
       // Add category relationship for new product
       if (!error && newProduct && categoryId) {
         await supabase
           .from('products_belong_to_categories')
           .insert({ product_id: newProduct.id, category_id: categoryId });
+      }
+    }
+
+    // Handle tags
+    if (!error && productId) {
+      // Remove existing tags
+      await supabase
+        .from('product_discribed_by_tags')
+        .delete()
+        .eq('product_id', productId);
+
+      // Add selected tags
+      if (selectedTagIds.length > 0) {
+        const tagInserts = selectedTagIds.map(tagId => ({
+          product_id: productId,
+          tag_id: tagId
+        }));
+        await supabase
+          .from('product_discribed_by_tags')
+          .insert(tagInserts);
       }
     }
 
@@ -202,21 +262,40 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
               Καινούργιο Προϊόν
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Όνομα</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  required
-                  defaultValue={editingProduct?.name || ''}
-                />
+              {editingProduct && (
+                <div className="space-y-2">
+                  <Label>Product ID</Label>
+                  <Input value={editingProduct.id} disabled />
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Όνομα</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    required
+                    defaultValue={editingProduct?.name || ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price">Τιμή (Χονδρική)</Label>
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    required
+                    defaultValue={editingProduct?.price || ''}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Περιγραφή</Label>
@@ -226,51 +305,42 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                   defaultValue={editingProduct?.description || ''}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Τιμή (Χονδρική)</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  required
-                  defaultValue={editingProduct?.price || ''}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="vat">ΦΠΑ (Ποσοστό)</Label>
-                <Input
-                  id="vat"
-                  name="vat"
-                  type="number"
-                  required
-                  defaultValue={editingProduct?.vat || 24}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="stock">Απόθεμα</Label>
-                <Input
-                  id="stock"
-                  name="stock"
-                  type="number"
-                  required
-                  defaultValue={editingProduct?.stock || ''}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category_id">Κατηγορία</Label>
-                <Select name="category_id" defaultValue={editingProduct?.category_id?.toString() || ''}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vat">ΦΠΑ (Ποσοστό)</Label>
+                  <Input
+                    id="vat"
+                    name="vat"
+                    type="number"
+                    required
+                    defaultValue={editingProduct?.vat || 24}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Απόθεμα</Label>
+                  <Input
+                    id="stock"
+                    name="stock"
+                    type="number"
+                    required
+                    defaultValue={editingProduct?.stock || ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category_id">Κατηγορία</Label>
+                  <Select name="category_id" defaultValue={editingProduct?.category_id?.toString() || ''}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="image_url">URL Εικόνας</Label>
@@ -280,6 +350,24 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                   type="url"
                   defaultValue={editingProduct?.image_url || ''}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Tags</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {tags.map((tag) => (
+                    <div key={tag.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`tag-${tag.id}`}
+                        name="tags"
+                        value={tag.id}
+                        defaultChecked={editingProduct?.tags.some(t => t.id === tag.id) || false}
+                      />
+                      <Label htmlFor={`tag-${tag.id}`} className="text-sm">
+                        {tag.name}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Saving...' : editingProduct ? 'Ενημέρωση' : 'Προσθήκη'}
@@ -296,6 +384,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                 <TableHead>Εικόνα</TableHead>
                 <TableHead>Όνομα</TableHead>
                 <TableHead>Κατηγορία</TableHead>
+                <TableHead>Tags</TableHead>
                 <TableHead>Τιμή</TableHead>
                 <TableHead>ΦΠΑ</TableHead>
                 <TableHead>Απόθεμα</TableHead>
@@ -314,6 +403,15 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                   </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category_name || 'No category'}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {product.tags.map((tag) => (
+                        <Badge key={tag.id} variant="secondary" className="text-xs">
+                          {tag.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
                   <TableCell>{product.price.toFixed(2)}€</TableCell>
                   <TableCell>{product.vat}%</TableCell>
                   <TableCell>

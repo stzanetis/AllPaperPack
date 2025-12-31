@@ -23,19 +23,29 @@ interface Category {
   parent_id: number | null;
 }
 
+interface Tag {
+  id: number;
+  name: string;
+}
+
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'all';
+  const initialTag = searchParams.get('tag') || 'all';
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
+  const [selectedTag, setSelectedTag] = useState<string>(initialTag);
 
   // Keep state in sync if URL changes externally (no-op if same)
   useEffect(() => {
     const urlCat = searchParams.get('category') || 'all';
+    const urlTag = searchParams.get('tag') || 'all';
     setSelectedCategory(urlCat);
+    setSelectedTag(urlTag);
   }, [searchParams]);
 
   const fetchProducts = async () => {
@@ -68,23 +78,41 @@ export default function Products() {
       query = query.in('category_id', includeIds);
     }
 
-    const { data, error } = await query;
+    let { data, error } = await query;
     if (error) {
       console.error('Error fetching products:', error);
-    } else {
-      // Map view columns to component's expected shape
-      const mappedProducts: Product[] = (data || []).map(p => ({
-        id: p.product_id,
-        name: p.product_name,
-        description: p.description,
-        price: p.price,
-        vat: p.vat,
-        image_url: p.image_url,
-        stock: p.stock,
-        category_name: p.category_name
-      }));
-      setProducts(mappedProducts);
+      setLoading(false);
+      return;
     }
+
+    // Filter by tag if selected
+    if (selectedTag !== 'all') {
+      const tagId = parseInt(selectedTag);
+      const { data: taggedProducts, error: tagError } = await supabase
+        .from('product_discribed_by_tags')
+        .select('product_id')
+        .eq('tag_id', tagId);
+
+      if (tagError) {
+        console.error('Error fetching tagged products:', tagError);
+      } else {
+        const taggedProductIds = taggedProducts?.map(tp => tp.product_id) || [];
+        data = data?.filter(p => taggedProductIds.includes(p.product_id)) || [];
+      }
+    }
+
+    // Map view columns to component's expected shape
+    const mappedProducts: Product[] = (data || []).map(p => ({
+      id: p.product_id,
+      name: p.product_name,
+      description: p.description,
+      price: p.price,
+      vat: p.vat,
+      image_url: p.image_url,
+      stock: p.stock,
+      category_name: p.category_name
+    }));
+    setProducts(mappedProducts);
     setLoading(false);
   };
 
@@ -101,15 +129,29 @@ export default function Products() {
     }
   };
 
-  // Fetch categories once
+  const fetchTags = async () => {
+    const { data, error } = await supabase
+      .from('tags')
+      .select('id, name')
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching tags:', error);
+    } else {
+      setTags(data || []);
+    }
+  };
+
+  // Fetch categories and tags once
   useEffect(() => {
     fetchCategories();
+    fetchTags();
   }, []);
 
-  // Fetch products whenever selected category or categories list changes
+  // Fetch products whenever selected category, tag or categories list changes
   useEffect(() => {
     fetchProducts();
-  }, [selectedCategory, categories]);
+  }, [selectedCategory, selectedTag, categories]);
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -155,11 +197,38 @@ export default function Products() {
               </SelectContent>
             </Select>
           </div>
+          <div className="md:w-48">
+            <Select
+              value={selectedTag}
+              onValueChange={(value) => {
+                setSelectedTag(value);
+                const params = new URLSearchParams(searchParams);
+                if (value === 'all') {
+                  params.delete('tag');
+                } else {
+                  params.set('tag', value);
+                }
+                setSearchParams(params);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Tags" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Όλες οι Προτάσεις</SelectItem>
+                {tags.map((tag) => (
+                  <SelectItem key={tag.id} value={String(tag.id)}>
+                    {tag.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="space-y-4">
               <Skeleton className="aspect-square" />
@@ -173,10 +242,14 @@ export default function Products() {
           <p className="text-muted-foreground">No products found matching your criteria.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
+          <div className="col-span-full text-center text-muted-foreground">
+            <div className="border-t border-gray-300 my-4" />
+            Τέλος προϊόντων.
+          </div>
         </div>
       )}
     </div>
