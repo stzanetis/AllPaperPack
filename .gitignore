@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 
 database/
+bun.lockb
+package-lock.json
