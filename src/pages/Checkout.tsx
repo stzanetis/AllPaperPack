@@ -218,94 +218,76 @@ export default function Checkout() {
 
     setLoading(true);
     try {
-      // 1) Create order in orders table (no user_id - that's in user_places_orders)
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          total: finalTotal,
-          status: 'Καταχωρημένη',
-        })
-        .select()
-        .single();
+      // 1) Create order and link to user using RPC function (bypasses RLS)
+      const { data: orderId, error: orderError } = await supabase
+        .rpc('create_order_for_user', {
+          p_user_email: user.email,
+          p_total: finalTotal,
+          p_status: 'Καταχωρημένη',
+        });
 
       if (orderError) throw orderError;
 
-      // 2) Link user to order via user_places_orders
-      const { error: linkError } = await supabase
-        .from('user_places_orders')
-        .insert({
-          user_id: dbUserId,
-          order_id: order.id,
-        });
-
-      if (linkError) throw linkError;
-
-      // 3) Create order items in orders_include_products
-      const orderItems = items.map(item => ({
-        order_id: order.id,
+      // 2) Add products to order using RPC function
+      const productsJson = items.map(item => ({
         product_id: item.product_id,
         quantity: item.quantity,
       }));
 
       const { error: itemsError } = await supabase
-        .from('orders_include_products')
-        .insert(orderItems);
+        .rpc('add_products_to_order', {
+          p_order_id: orderId,
+          p_products: productsJson,
+        });
 
       if (itemsError) throw itemsError;
 
-      // 4) Update product stock
-      for (const item of items) {
-        const newStock = Math.max(0, item.product.stock - item.quantity);
-        const { error: stockError } = await supabase
-          .from('products')
-          .update({ stock: newStock })
-          .eq('id', item.product_id);
-
-        if (stockError) throw stockError;
-      }
-
-      // 5) If coupon applied, link it to order and mark as used by user
+      // 3) If coupon applied, link it to order using RPC function
       if (appliedCoupon) {
-        await supabase
-          .from('coupons_applied_to_orders')
-          .insert({
-            coupon_code: appliedCoupon.code,
-            order_id: order.id,
+        const { error: couponError } = await supabase
+          .rpc('apply_coupon_to_order', {
+            p_user_email: user.email,
+            p_order_id: orderId,
+            p_coupon_code: appliedCoupon.code,
           });
 
-        await supabase
-          .from('user_applied_coupons')
-          .insert({
-            user_id: dbUserId,
-            coupon_code: appliedCoupon.code,
-          });
-      }
-
-      // 6) If pickup location selected, link it to order and update package count
-      if (deliveryMode === 'pickup' && selectedPickupId) {
-        await supabase
-          .from('orders_shipped_to_pickup_locations')
-          .insert({
-            order_id: order.id,
-            pickup_id: selectedPickupId,
-          });
-
-        // Increment number_of_packages at the pickup location
-        const location = pickupLocations.find(l => l.id === selectedPickupId);
-        if (location) {
-          await supabase
-            .from('pickup_locations')
-            .update({ number_of_packages: location.number_of_packages + 1 })
-            .eq('id', selectedPickupId);
+        if (couponError) {
+          console.error('Coupon error:', couponError);
+          // Don't throw - order is already created
         }
       }
 
-      // 7) Clear cart
+      // 4) If pickup location selected, link it to order using RPC function
+      if (deliveryMode === 'pickup' && selectedPickupId) {
+        const { error: pickupError } = await supabase
+          .rpc('set_order_pickup_location', {
+            p_order_id: orderId,
+            p_pickup_id: selectedPickupId,
+          });
+
+        if (pickupError) {
+          console.error('Pickup error:', pickupError);
+          // Don't throw - order is already created
+        }
+      }
+
+      // 5) Clear cart using RPC function
+      const { error: cartError } = await supabase
+        .rpc('clear_user_cart', {
+          p_user_email: user.email,
+        });
+
+      if (cartError) {
+        console.error('Cart clear error:', cartError);
+        // Don't throw - order is already created
+      }
+
+      // Also update local state
       await clearCart();
 
       toast({
         title: 'Η παραγγελία ολοκληρώθηκε!',
-        description: `Order #${order.id} δημιουργήθηκε.`,
+        description: `Order #${orderId} δημιουργήθηκε.`,
       });
 
       navigate('/');
