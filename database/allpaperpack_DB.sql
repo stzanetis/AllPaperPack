@@ -242,47 +242,6 @@ INSERT INTO users (id, full_name, email, phone_number, role, city, country, stre
 -- Reset sequence for users
 SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
 
--- Insert categories
-INSERT INTO categories (id, name, description, parent_id) VALUES
-(1, 'Paper Utensils', 'All paper-based utensils and products', NULL),
-(2, 'Plastic Utensils', 'All plastic-based utensils and products', NULL),
-(3, 'Paper Cups', 'Disposable paper cups for hot and cold beverages', 1),
-(4, 'Plastic Cups', 'Disposable plastic cups', 2),
-(5, 'Paper Plates', 'Disposable paper plates', 1),
-(6, 'Napkins', 'Paper napkins and tissues', 1),
-(7, 'Straws', 'Drinking straws - paper and plastic', NULL),
-(8, 'Food Containers', 'Containers for food storage and takeaway', NULL);
-
--- Reset sequence for categories
-SELECT setval('categories_id_seq', (SELECT MAX(id) FROM categories));
-
--- Insert products
-INSERT INTO products (id, name, description, price, stock, image_url, vat) VALUES
-(1, 'Paper Cup 200ml', 'White paper cup for hot beverages, 200ml capacity', 0.15, 5000, 'https://allpaperpack.gr/images/papercup200.jpg', 24),
-(2, 'Paper Cup 300ml', 'White paper cup for hot beverages, 300ml capacity', 0.18, 4500, 'https://allpaperpack.gr/images/papercup300.jpg', 24),
-(3, 'Paper Plate 18cm', 'Round paper plate, 18cm diameter', 0.32, 3000, 'https://allpaperpack.gr/images/paperplate18.jpg', 24),
-(4, 'Plastic Cup 200ml', 'Clear plastic cup for cold beverages, 200ml', 0.08, 8000, 'https://allpaperpack.gr/images/plasticcup200.jpg', 24),
-(5, 'Plastic Cup 500ml', 'Clear plastic cup for cold beverages, 500ml', 0.12, 6000, 'https://allpaperpack.gr/images/plasticcup500.jpg', 24),
-(6, 'Paper Napkins Pack 100', 'Pack of 100 white paper napkins', 2.50, 1500, 'https://allpaperpack.gr/images/napkins100.jpg', 24),
-(7, 'Paper Straws Pack 50', 'Eco-friendly paper straws, pack of 50', 1.80, 2000, 'https://allpaperpack.gr/images/paperstraws.jpg', 24),
-(8, 'Food Container 500ml', 'Recyclable food container with lid', 0.45, 3500, 'https://allpaperpack.gr/images/container500.jpg', 24),
-(9, 'Coffee Cup Lid', 'Plastic lid for paper coffee cups', 0.05, 10000, 'https://allpaperpack.gr/images/coffeelid.jpg', 24),
-(10, 'Paper Plate 25cm', 'Large round paper plate, 25cm diameter', 0.45, 2500, 'https://allpaperpack.gr/images/paperplate25.jpg', 24);
-
--- Reset sequence for products
-SELECT setval('products_id_seq', (SELECT MAX(id) FROM products));
-
--- Insert tags
-INSERT INTO tags (id, name, description, color) VALUES
-(1, 'recyclable', 'Product is made from recyclable materials', '#22c55e'),
-(2, 'food-grade', 'Product is safe for food contact', '#f59e0b'),
-(3, 'heat-resistant', 'Product can withstand high temperatures', '#ef4444'),
-(4, 'biodegradable', 'Product is biodegradable', '#10b981'),
-(5, 'eco-friendly', 'Environmentally friendly product', '#06b6d4');
-
--- Reset sequence for tags
-SELECT setval('tags_id_seq', (SELECT MAX(id) FROM tags));
-
 -- Insert coupons
 INSERT INTO coupons (code, discount, expiration_date) VALUES
 ('asd3j40jkxd', 5.00, '2025-03-15'),
@@ -328,27 +287,6 @@ INSERT INTO cart (user_id, product_id, quantity) VALUES
 (2, 7, 2),
 (3, 8, 80),
 (5, 3, 25);
-
--- Insert products_belong_to_categories
-INSERT INTO products_belong_to_categories (product_id, category_id) VALUES
-(1, 3),
-(2, 3),
-(9, 3),
-(4, 4),
-(5, 4),
-(3, 5),
-(10, 5),
-(6, 6),
-(7, 7),
-(8, 8);
-
--- Insert product_discribed_by_tags
-INSERT INTO product_discribed_by_tags (product_id, tag_id) VALUES
-(1, 1), (2, 1), (3, 1), (6, 1), (7, 1), (8, 1), (10, 1),
-(1, 2), (2, 2), (3, 2), (4, 2), (5, 2), (8, 2), (9, 2), (10, 2),
-(1, 3), (2, 3),
-(6, 4), (7, 4),
-(7, 5);
 
 -- Insert orders_include_products
 INSERT INTO orders_include_products (order_id, product_id, quantity) VALUES
