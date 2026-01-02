@@ -46,11 +46,10 @@ npm install
 1. Go to [supabase.com](https://supabase.com) and create a new project
 2. Wait for project initialization
 3. Copy the entire contents of `database/allpaperpackdb_V2.sql` to the SQL editor and execute the script
-4. Execute all `*_rows` files from the supabase SQL editor to add more data to the database
-5. Copy the `.env.local` file containing the database URL and public key by pressing on supabase:
+4. Copy the `.env.local` file containing the database URL and public key by pressing on supabase:
     1. Connect
     2. App Frameworks -> Framework: React, Using: Vite, With: Supabase-js
-6. Make sure the variable names match the names in `src/lib/supabase/client.ts`
+5. Make sure the variable names match the names in `src/lib/supabase/client.ts`
 
 ### **Step 3: Start Development Server**
 
