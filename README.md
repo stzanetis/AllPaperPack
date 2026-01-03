@@ -26,16 +26,7 @@ Note that some RLS policies may be incomplete as security was not a priority for
 
 ### **Step 1: Install Dependencies**
 
-You can either clone the GitHub reposity containing the web app code or use the one in the deliverable.
-If you want to use the GitHub code, make sure to test the `Databases` branch
-
-```bash
-git clone https://github.com/stzanetis/AllPaperPack.git
-cd AllPaperPack
-git switch Databases
-```
-
-After traversing to the project's directory, just install all necessary dependancies
+In the base directory of the web app simply install all necessary dependancies
 
 ```bash
 npm install
@@ -45,11 +36,13 @@ npm install
 
 1. Go to [supabase.com](https://supabase.com) and create a new project
 2. Wait for project initialization
-3. Copy the entire contents of `database/allpaperpackdb_V2.sql` to the SQL editor and execute the script
+3. Copy the entire contents of `database/allpaperpack_DB.sql` to the SQL editor and execute the script
 4. Copy the `.env.local` file containing the database URL and public key by pressing on supabase:
     1. Connect
-    2. App Frameworks -> Framework: React, Using: Vite, With: Supabase-js
+    2. App Frameworks -> **Framework:** React, **Using:** Vite, **With:**  Supabase-js
 5. Make sure the variable names match the names in `src/lib/supabase/client.ts`
+
+Alternatively you can use the hosted database with the existing credentials in the `.env.local` file.
 
 ### **Step 3: Start Development Server**
 
@@ -70,3 +63,5 @@ Authentication in the database with creating new users works differently in supa
   - **E-mail**: `admin@allpaperpack.com`         **Password**: `secretpassword`
   - **E-mail**: `order.manager@allpaperpack.com` **Password**: `secretpassword`
   - **E-mail**: `customer@allpaperpack.com`      **Password**: `secretpassword`
+
+Also note that the database may lack some important RLS policies for some tables, without affecting its functionality for testing purposes.
