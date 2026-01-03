@@ -6,65 +6,118 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface Product {
-  id: string;
-  name: string;
-  description: string;
+interface ProductVariant {
+  id: number;
+  variant_name: string;
   price: number;
-  vat: number;
-  image_url: string;
   stock: number;
+}
+
+interface Tag {
+  id: number;
+  name: string;
+  color_hex: string | null;
+}
+
+interface ProductBase {
+  id: number;
+  name: string;
+  description: string | null;
+  image_path: string | null;
+  vat: number;
+  category_id: number;
   categories: {
-    id: string;
+    id: number;
     name: string;
-    parent: { id: string; name: string } | null;
+    parent: { id: number; name: string } | null;
   } | null;
-  tags: string[];
+  variants: ProductVariant[];
+  tags: Tag[];
 }
 
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>();
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<ProductBase | null>(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const { addToCart } = useCart();
   const [qty, setQty] = useState(1);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
       setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
+
+      // Fetch product base
+      const { data: baseData, error: baseError } = await supabase
+        .from('product_bases')
         .select(`
           id,
           name,
           description,
-          price,
+          image_path,
           vat,
-          image_url,
-          stock,
+          category_id,
           categories:category_id (
             id,
             name,
             parent:parent_id ( id, name )
-          ),
-          tags
+          )
         `)
-        .eq('id', id)
+        .eq('id', parseInt(id))
         .single();
 
-      if (!error) setProduct(data as Product);
+      if (baseError) {
+        setLoading(false);
+        return;
+      }
+
+      // Fetch variants
+      const { data: variantsData } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('base_id', parseInt(id))
+        .order('price', { ascending: true });
+
+      // Fetch tags
+      const { data: tagsData } = await supabase
+        .from('product_has_tags')
+        .select('tag_id, tags:tag_id (id, name, color_hex)')
+        .eq('base_id', parseInt(id));
+
+      const tags = (tagsData || []).map(t => t.tags as unknown as Tag).filter(Boolean);
+      const variants = variantsData || [];
+
+      setProduct({
+        ...baseData,
+        variants,
+        tags,
+      } as ProductBase);
+
+      // Select first in-stock variant by default
+      const firstInStock = variants.find(v => v.stock > 0);
+      if (firstInStock) {
+        setSelectedVariantId(firstInStock.id);
+      } else if (variants.length > 0) {
+        setSelectedVariantId(variants[0].id);
+      }
+
       setLoading(false);
     };
     fetchProduct();
   }, [id]);
 
+  const selectedVariant = product?.variants.find(v => v.id === selectedVariantId);
+  const price = selectedVariant?.price || 0;
+  const stock = selectedVariant?.stock || 0;
+
   const handleAdd = async () => {
-    if (!product) return;
+    if (!selectedVariant || stock === 0) return;
     setAdding(true);
-    await addToCart(product.id, qty);
+    await addToCart(selectedVariant.id, qty);
     setAdding(false);
   };
 
@@ -95,7 +148,7 @@ export default function ProductDetails() {
       <div className="grid gap-8 md:grid-cols-2">
         <div className="aspect-square overflow-hidden rounded-lg bg-muted">
           <img
-            src={product.image_url}
+            src={product.image_path || '/placeholder.svg'}
             alt={product.name}
             className="h-full w-full object-cover"
           />
@@ -132,16 +185,59 @@ export default function ProductDetails() {
             </div>
           </div>
 
-          {/* Product Name and Stock */}
+          {/* Product Name */}
           <h1 className="text-2xl md:text-3xl text-gray-800 font-semibold mb-2">{product.name}</h1>
+          
           {/* Tags */}
           {product.tags && product.tags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
               {product.tags.map((tag) => (
-                <Badge key={tag} variant="default">
-                  {tag}
+                <Badge 
+                  key={tag.id} 
+                  variant="default"
+                  style={{ backgroundColor: tag.color_hex || undefined }}
+                >
+                  {tag.name}
                 </Badge>
               ))}
+            </div>
+          )}
+
+          {/* Variant Selection */}
+          {product.variants.length > 1 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Επιλέξτε Παραλλαγή</label>
+              <Select
+                value={selectedVariantId?.toString() || ''}
+                onValueChange={(value) => {
+                  setSelectedVariantId(parseInt(value));
+                  setQty(1);
+                }}
+              >
+                <SelectTrigger className="w-full md:w-64">
+                  <SelectValue placeholder="Επιλέξτε παραλλαγή" />
+                </SelectTrigger>
+                <SelectContent>
+                  {product.variants.map((variant) => (
+                    <SelectItem 
+                      key={variant.id} 
+                      value={variant.id.toString()}
+                      disabled={variant.stock === 0}
+                    >
+                      {variant.variant_name} - {variant.price.toFixed(2)}€
+                      {variant.stock === 0 && ' (Εξαντλήθηκε)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {product.variants.length === 1 && (
+            <div className="mb-4">
+              <Badge variant="outline" className="text-sm">
+                {product.variants[0].variant_name}
+              </Badge>
             </div>
           )}
 
@@ -149,19 +245,19 @@ export default function ProductDetails() {
           <div className="my-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="w-64 h-16 bg-gray-100/70 rounded-full border flex items-center px-4">
               <span className="flex-1 text-center">
-                <h1 className="text-2xl text-primary font-bold">{product.price.toFixed(2)}€</h1>
+                <h1 className="text-2xl text-primary font-bold">{price.toFixed(2)}€</h1>
                 <p className="text-sm">ΧΟΝΤΡΙΚΗ</p>
               </span>
               <div className="h-10 border-l border-gray-300 ml-4 mr-3" aria-hidden="true" />
               <span className="flex-1 text-center">
                 <h1 className="text-xl text-gray-700 font-bold">
-                  {(product.price + (product.price * product.vat * 0.01)).toFixed(2)}€
+                  {(price + (price * product.vat * 0.01)).toFixed(2)}€
                 </h1>
                 <p className="text-sm">ΜΕ ΦΠΑ</p>
               </span>
             </div>
 
-            <div className="flex items-center ml-20 gap-2">
+            <div className="flex items-center ml-0 sm:ml-20 gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -177,10 +273,10 @@ export default function ProductDetails() {
                 className="w-24 rounded-full text-center"
                 value={qty}
                 min={1}
-                max={product.stock || undefined}
+                max={stock || undefined}
                 onChange={(e) => {
                   const v = parseInt(e.target.value || '1', 10);
-                  const max = Math.max(1, product.stock || 1);
+                  const max = Math.max(1, stock || 1);
                   setQty(Number.isNaN(v) ? 1 : Math.min(Math.max(1, v), max));
                 }}
               />
@@ -188,21 +284,21 @@ export default function ProductDetails() {
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => setQty((q) => Math.min(product.stock || q + 1, q + 1))}
-                disabled={product.stock > 0 ? qty >= product.stock : false}
+                onClick={() => setQty((q) => Math.min(stock || q + 1, q + 1))}
+                disabled={stock > 0 ? qty >= stock : false}
                 className="bg-primary text-white rounded-full"
               >
                 +
               </Button>
-              <Badge className="h-10" variant={product.stock > 0 ? 'default' : 'destructive'}>
-                {product.stock > 0 ? `${product.stock} σε απόθεμα` : 'Χωρίς απόθεμα'}
+              <Badge className="h-10" variant={stock > 0 ? 'default' : 'destructive'}>
+                {stock > 0 ? `${stock} σε απόθεμα` : 'Χωρίς απόθεμα'}
               </Badge>
             </div>
           </div>
 
           <Button
             onClick={handleAdd}
-            disabled={product.stock === 0 || adding}
+            disabled={stock === 0 || adding || !selectedVariant}
             className="w-full text-md rounded-full"
           >
             {adding ? 'Προσθήκη…' : 'Προσθήκη στο Καλάθι'}
@@ -211,8 +307,6 @@ export default function ProductDetails() {
           <p className="text-muted-foreground my-8 whitespace-pre-line">
             {product.description}
           </p>
-
-          
         </div>
       </div>
     </div>

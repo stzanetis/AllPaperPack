@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,11 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 
 interface Order {
-  id: string;
+  id: number;
   total: number;
-  status: string;
+  status: 'submitted' | 'confirmed' | 'completed' | 'cancelled';
   created_at: string;
-  user_id: string;
+  profile_id: string;
+  profile?: { name: string | null; surname: string | null } | null;
 }
 
 export const OrderManagement = () => {
@@ -27,7 +27,8 @@ export const OrderManagement = () => {
         total,
         status,
         created_at,
-        user_id
+        profile_id,
+        profile:profile_id (name, surname)
       `)
       .order('created_at', { ascending: false });
 
@@ -42,7 +43,7 @@ export const OrderManagement = () => {
     fetchOrders();
   }, []);
 
-  const updateOrderStatus = async (orderId: string, status: string) => {
+  const updateOrderStatus = async (orderId: number, status: 'submitted' | 'confirmed' | 'completed' | 'cancelled') => {
     setLoading(true);
 
     const { error } = await supabase
@@ -69,18 +70,31 @@ export const OrderManagement = () => {
 
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'submitted':
         return 'secondary';
       case 'confirmed':
         return 'default';
-      case 'shipped':
+      case 'completed':
         return 'outline';
-      case 'delivered':
-        return 'default';
       case 'cancelled':
         return 'destructive';
       default:
         return 'secondary';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'submitted':
+        return 'Υποβλήθηκε';
+      case 'confirmed':
+        return 'Επιβεβαιώθηκε';
+      case 'completed':
+        return 'Ολοκληρώθηκε';
+      case 'cancelled':
+        return 'Ακυρώθηκε';
+      default:
+        return status;
     }
   };
 
@@ -106,17 +120,20 @@ export const OrderManagement = () => {
               {orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-mono text-sm">
-                    #{order.id.slice(-8)}
+                    #{order.id}
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm text-muted-foreground">
-                      Customer ID: {order.user_id.slice(-8)}
+                    <div className="text-sm">
+                      {order.profile?.name || order.profile?.surname
+                        ? `${order.profile?.name || ''} ${order.profile?.surname || ''}`.trim()
+                        : <span className="text-muted-foreground">ID: {order.profile_id.slice(0, 8)}</span>
+                      }
                     </div>
                   </TableCell>
                   <TableCell>€{order.total.toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge variant={getStatusVariant(order.status)}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      {getStatusLabel(order.status)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -125,18 +142,17 @@ export const OrderManagement = () => {
                   <TableCell>
                     <Select
                       value={order.status}
-                      onValueChange={(value) => updateOrderStatus(order.id, value)}
+                      onValueChange={(value) => updateOrderStatus(order.id, value as 'submitted' | 'confirmed' | 'completed' | 'cancelled')}
                       disabled={loading}
                     >
                       <SelectTrigger className="w-32">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
-                        <SelectItem value="delivered">Delivered</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="submitted">Υποβλήθηκε</SelectItem>
+                        <SelectItem value="confirmed">Επιβεβαιώθηκε</SelectItem>
+                        <SelectItem value="completed">Ολοκληρώθηκε</SelectItem>
+                        <SelectItem value="cancelled">Ακυρώθηκε</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>

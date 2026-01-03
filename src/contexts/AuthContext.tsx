@@ -4,14 +4,15 @@ import { supabase } from '@/lib/supabase/client';
 
 interface Profile {
   id: string;
-  user_id: string;
-  email: string;
-  full_name: string | null;
+  name: string | null;
+  surname: string | null;
+  telephone: string | null;
   role: 'admin' | 'customer';
-  phone_number: string | null;
   company_name: string | null;
   afm_number: string | null;
-  address_id: string | null;
+  city: string | null;
+  street: string | null;
+  zip: string | null;
 }
 
 interface AuthContextType {
@@ -19,11 +20,10 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string, surname: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
-  // expose a profile refresh
   refreshProfile: () => Promise<void>;
 }
 
@@ -36,10 +36,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
+    // In the new schema, profile.id = auth.users.id (no user_id column)
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('user_id', userId)
+      .eq('id', userId)
       .single();
     
     if (!error && data) {
@@ -82,14 +83,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, name: string, surname: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
         data: {
-          full_name: fullName,
+          name,
+          surname,
         },
       },
     });

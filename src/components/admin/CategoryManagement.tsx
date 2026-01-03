@@ -11,12 +11,11 @@ import { toast } from '@/components/ui/use-toast';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 
 interface Category {
-  id: string;
+  id: number;
   name: string;
   description: string | null;
-  created_at: string;
-  parent_id: string | null;
-  parent?: { id: string; name: string } | null;
+  parent_id: number | null;
+  parent?: { id: number; name: string } | null;
 }
 
 export const CategoryManagement = () => {
@@ -28,8 +27,8 @@ export const CategoryManagement = () => {
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
-      .select('id,name,description,created_at,parent_id,parent:parent_id(id,name)')
-      .order('created_at', { ascending: false });
+      .select('id,name,description,parent_id,parent:parent_id(id,name)')
+      .order('name', { ascending: true });
 
     if (error) {
       console.error('Error fetching categories:', error);
@@ -48,12 +47,12 @@ export const CategoryManagement = () => {
 
     const formData = new FormData(e.currentTarget);
     const parentRaw = (formData.get('parent_id') as string) || '';
-    const parent_id = parentRaw === '' ? null : parentRaw;
+    const parent_id = parentRaw === '' ? null : parseInt(parentRaw, 10);
 
     const categoryData = {
       name: formData.get('name') as string,
       description: (formData.get('description') as string) || null,
-      parent_id,
+      parent_id: parent_id as number | null,
     };
 
     let error;
@@ -89,7 +88,7 @@ export const CategoryManagement = () => {
     setLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this category?')) return;
 
     const { error } = await supabase
@@ -122,7 +121,7 @@ export const CategoryManagement = () => {
     setDialogOpen(false);
   };
 
-  const parentOptions = (currentId?: string) =>
+  const parentOptions = (currentId?: number) =>
     categories.filter(c => c.id !== currentId); // simple self-exclude
 
   return (
@@ -131,7 +130,9 @@ export const CategoryManagement = () => {
         <CardTitle>Διαχείριση Κατηγοριών</CardTitle>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}>
+            <Button onClick={resetForm}
+                    className="rounded-full hover:bg-primary"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Καινούργια Κατηγορία
             </Button>
@@ -194,7 +195,6 @@ export const CategoryManagement = () => {
                 <TableHead>Όνομα</TableHead>
                 <TableHead>Περιγραφή</TableHead>
                 <TableHead>Προέλευση</TableHead>
-                <TableHead>Δημιουργήθηκε</TableHead>
                 <TableHead>Ενέργειες</TableHead>
               </TableRow>
             </TableHeader>
@@ -205,14 +205,12 @@ export const CategoryManagement = () => {
                   <TableCell>{category.description || 'Χωρίς περιγραφή'}</TableCell>
                   <TableCell>{category.parent?.name ?? '—'}</TableCell>
                   <TableCell>
-                    {new Date(category.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(category)}
+                        className="rounded-full hover:bg-primary"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -220,7 +218,7 @@ export const CategoryManagement = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDelete(category.id)}
-                        className="text-destructive hover:text-destructive"
+                        className="text-destructive hover:bg-red-400 rounded-full hover:text-white"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

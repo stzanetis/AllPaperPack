@@ -8,93 +8,50 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 
-type Address = {
-  id: string;
-  user_id: string;
-  country: string;
-  city: string;
-  street: string;
-  street_number: string;
-};
-
 const isNonEmpty = (v?: string | null) => (v ?? '').toString().trim().length > 0;
 
 export default function Checkout() {
   const { user, profile, loading: authLoading } = useAuth();
-  const { items, loading: cartLoading, clearCart, total } = useCart();
-  const [address, setAddress] = useState<Address | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { items, loading: cartLoading, total } = useCart();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   // New details (when user chooses to enter new ones)
-  const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [country, setCountry] = useState('');
+  const [name, setName] = useState('');
+  const [surname, setSurname] = useState('');
+  const [telephone, setTelephone] = useState('');
   const [city, setCity] = useState('');
   const [street, setStreet] = useState('');
-  const [streetNumber, setStreetNumber] = useState('');
+  const [zip, setZip] = useState('');
   const [mode, setMode] = useState<'saved' | 'new'>('saved');
 
   useEffect(() => {
-    const load = async () => {
-      if (!user) return;
-      setLoading(true);
-      try {
-        // Try linked address first
-        if (profile?.address_id) {
-          const { data } = await supabase
-            .from('addresses')
-            .select('*')
-            .eq('id', profile.address_id)
-            .single();
-          if (data) setAddress(data as Address);
-        } else {
-          // Fallback: first address owned by user (if schema has user_id)
-          const { data } = await supabase
-            .from('addresses')
-            .select('*')
-            .eq('user_id', user.id)
-            .limit(1)
-            .maybeSingle();
-          if (data) setAddress(data as Address);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [user, profile?.address_id]);
+    if (profile) {
+      setName(profile.name ?? '');
+      setSurname(profile.surname ?? '');
+      setTelephone(profile.telephone ?? '');
+      setCity(profile.city ?? '');
+      setStreet(profile.street ?? '');
+      setZip(profile.zip ?? '');
+    }
+  }, [profile]);
 
   const savedComplete = useMemo(() => {
-    const hasName = isNonEmpty(profile?.full_name);
-    const hasPhone = isNonEmpty(profile?.phone_number);
+    const hasName = isNonEmpty(profile?.name) || isNonEmpty(profile?.surname);
+    const hasTelephone = isNonEmpty(profile?.telephone);
     const hasAddress =
-      isNonEmpty(address?.country) &&
-      isNonEmpty(address?.city) &&
-      isNonEmpty(address?.street) &&
-      isNonEmpty(address?.street_number);
-    return hasName && hasPhone && hasAddress;
-  }, [profile, address]);
+      isNonEmpty(profile?.city) &&
+      isNonEmpty(profile?.street);
+    return hasName && hasTelephone && hasAddress;
+  }, [profile]);
 
   useEffect(() => {
     // Default mode based on whether saved details are complete
     setMode(savedComplete ? 'saved' : 'new');
-
-    // Prefill "new" fields from saved when available
-    if (profile) {
-      setFullName(profile.full_name ?? '');
-      setPhoneNumber(profile.phone_number ?? '');
-    }
-    if (address) {
-      setCountry(address.country ?? '');
-      setCity(address.city ?? '');
-      setStreet(address.street ?? '');
-      setStreetNumber(address.street_number ?? '');
-    }
-  }, [savedComplete, profile, address]);
+  }, [savedComplete]);
 
   if (!authLoading && !user) return <Navigate to="/auth" replace />;
-  if (authLoading || cartLoading || loading) {
+  if (authLoading || cartLoading) {
     return (
       <div className="container mx-auto px-4 py-10">
         Φόρτωση…
@@ -111,12 +68,11 @@ export default function Checkout() {
     // Validate "new" fields if mode=new
     if (mode === 'new') {
       if (
-        !isNonEmpty(fullName) ||
-        !isNonEmpty(phoneNumber) ||
-        !isNonEmpty(country) ||
+        !isNonEmpty(name) ||
+        !isNonEmpty(surname) ||
+        !isNonEmpty(telephone) ||
         !isNonEmpty(city) ||
-        !isNonEmpty(street) ||
-        !isNonEmpty(streetNumber)
+        !isNonEmpty(street)
       ) {
         alert('Συμπληρώστε όλα τα απαιτούμενα πεδία.');
         return;
@@ -128,61 +84,43 @@ export default function Checkout() {
 
     if (!user || items.length === 0) return;
 
+    setLoading(true);
+
     try {
-      // 1) Create order (use same shape Cart used: user_id, total, status)
+      // 1) Create order with status 'submitted'
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
-          user_id: user.id,
-          total: total,
-          status: 'pending',
+          profile_id: user.id,
+          total: 0, // Will be calculated by trigger
+          status: 'submitted',
         })
         .select()
         .single();
 
       if (orderError) throw orderError;
 
-      // 2) Create order items
-      const orderItems = items.map(item => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        unit_price: item.product.price,
-        total_price: item.product.price * item.quantity,
-      }));
+      // 2) Use the checkout_order function to process the order
+      const { error: checkoutError } = await supabase
+        .rpc('checkout_order', { p_order_id: order.id });
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      // 3) Update product stock
-      for (const item of items) {
-        const { error: stockError } = await supabase
-          .from('products')
-          .update({ stock: item.product.stock - item.quantity })
-          .eq('id', item.product_id);
-
-        if (stockError) throw stockError;
-      }
-
-      // 4) Clear cart
-      await clearCart();
+      if (checkoutError) throw checkoutError;
 
       toast({
         title: 'Η παραγγελία ολοκληρώθηκε!',
-        description: `Order #${String(order.id).slice(-8)} δημιουργήθηκε.`,
+        description: `Παραγγελία #${order.id} δημιουργήθηκε.`,
       });
 
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Checkout error:', error);
       toast({
         title: 'Αποτυχία ολοκλήρωσης',
-        description: 'Προέκυψε σφάλμα κατά την επεξεργασία της παραγγελίας.',
+        description: error.message || 'Προέκυψε σφάλμα κατά την επεξεργασία της παραγγελίας.',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -199,12 +137,16 @@ export default function Checkout() {
           <div className="font-medium mb-2">Σύνοψη καλαθιού</div>
           <ul className="text-sm space-y-1">
             {items.map((it) => (
-              <li key={it.id} className="flex justify-between">
-                <span>{it.product.name} × {it.quantity}</span>
-                <span>€{(it.product.price * it.quantity).toFixed(2)}</span>
+              <li key={it.variant_id} className="flex justify-between">
+                <span>{it.variant.base.name} ({it.variant.variant_name}) × {it.quantity}</span>
+                <span>€{(it.variant.price * it.quantity).toFixed(2)}</span>
               </li>
             ))}
           </ul>
+          <div className="border-t mt-3 pt-3 font-medium flex justify-between">
+            <span>Σύνολο (χωρίς ΦΠΑ):</span>
+            <span>€{total.toFixed(2)}</span>
+          </div>
         </div>
       )}
 
@@ -252,11 +194,11 @@ export default function Checkout() {
 
           {mode === 'saved' && savedComplete && (
             <div className="grid gap-3 text-sm border rounded-md p-4">
-              <div><span className="font-medium">Ονοματεπώνυμο:</span> {profile?.full_name}</div>
-              <div><span className="font-medium">Τηλέφωνο:</span> {profile?.phone_number}</div>
+              <div><span className="font-medium">Ονοματεπώνυμο:</span> {profile?.name} {profile?.surname}</div>
+              <div><span className="font-medium">Τηλέφωνο:</span> {profile?.telephone}</div>
               <div>
                 <span className="font-medium">Διεύθυνση:</span>{' '}
-                {address?.street} {address?.street_number}, {address?.city}, {address?.country}
+                {profile?.street}, {profile?.city} {profile?.zip}
               </div>
               <div className="pt-2">
                 <Link to="/account" className="text-primary underline">Επεξεργασία αποθηκευμένων στοιχείων</Link>
@@ -268,30 +210,30 @@ export default function Checkout() {
             <div className="grid gap-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="fullName">Ονοματεπώνυμο</Label>
-                  <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                  <Label htmlFor="name">Όνομα</Label>
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Τηλέφωνο</Label>
-                  <Input id="phone" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
+                  <Label htmlFor="surname">Επώνυμο</Label>
+                  <Input id="surname" value={surname} onChange={(e) => setSurname(e.target.value)} required />
                 </div>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="country">Χώρα</Label>
-                  <Input id="country" value={country} onChange={(e) => setCountry(e.target.value)} required />
-                </div>
+              <div>
+                <Label htmlFor="telephone">Τηλέφωνο</Label>
+                <Input id="telephone" value={telephone} onChange={(e) => setTelephone(e.target.value)} required />
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <Label htmlFor="city">Πόλη</Label>
                   <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} required />
                 </div>
                 <div>
-                  <Label htmlFor="street">Οδός</Label>
+                  <Label htmlFor="street">Οδός & Αριθμός</Label>
                   <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} required />
                 </div>
                 <div>
-                  <Label htmlFor="streetNumber">Αριθμός</Label>
-                  <Input id="streetNumber" value={streetNumber} onChange={(e) => setStreetNumber(e.target.value)} required />
+                  <Label htmlFor="zip">Τ.Κ.</Label>
+                  <Input id="zip" value={zip} onChange={(e) => setZip(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -302,8 +244,8 @@ export default function Checkout() {
           <Link to="/cart">
             <Button variant="outline">Πίσω στο Καλάθι</Button>
           </Link>
-          <Button type="submit" disabled={cartIsEmpty}>
-            Συνέχεια
+          <Button type="submit" disabled={cartIsEmpty || loading}>
+            {loading ? 'Επεξεργασία...' : 'Ολοκλήρωση Παραγγελίας'}
           </Button>
         </div>
       </form>

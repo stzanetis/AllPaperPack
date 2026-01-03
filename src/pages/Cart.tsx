@@ -4,18 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
-import { toast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 
 export default function Cart() {
-  const { items, updateQuantity, removeFromCart, clearCart, total, loading } = useCart();
+  const { items, updateQuantity, removeFromCart, total, loading } = useCart();
   const { user } = useAuth();
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Remove order placement from Cart; just navigate to checkout
+  // Navigate to checkout
   const handleGoToCheckout = () => {
     if (!user || items.length === 0) return;
     navigate('/checkout');
@@ -58,53 +54,54 @@ export default function Cart() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => (
-            <Card key={item.id}>
+            <Card key={item.variant_id}>
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
                   <img
-                    src={item.product.image_url}
-                    alt={item.product.name}
+                    src={item.variant.base.image_path ?? ''}
+                    alt={item.variant.base.name}
                     className="w-20 h-20 object-cover rounded-md"
                   />
                   <div className="flex-1">
-                    <h3 className="font-semibold">{item.product.name}</h3>
+                    <h3 className="font-semibold">{item.variant.base.name}</h3>
+                    <p className="text-sm text-muted-foreground">{item.variant.variant_name}</p>
                     <p className="text-muted-foreground">
-                      €{item.product.price.toFixed(2)} ανά τεμάχιο
+                      €{item.variant.price.toFixed(2)} ανά τεμάχιο
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.variant_id, item.quantity - 1)}
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
                     <Input
                       type="number"
                       value={item.quantity}
-                      onChange={(e) => updateQuantity(item.product_id, parseInt(e.target.value) || 0)}
+                      onChange={(e) => updateQuantity(item.variant_id, parseInt(e.target.value) || 0)}
                       className="w-20 text-center"
                       min="0"
-                      max={item.product.stock}
+                      max={item.variant.stock}
                     />
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                      disabled={item.quantity >= item.product.stock}
+                      onClick={() => updateQuantity(item.variant_id, item.quantity + 1)}
+                      disabled={item.quantity >= item.variant.stock}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold">
-                      €{(item.product.price * item.quantity).toFixed(2)}
+                      €{(item.variant.price * item.quantity).toFixed(2)}
                     </p>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeFromCart(item.product_id)}
+                      onClick={() => removeFromCart(item.variant_id)}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />

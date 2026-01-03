@@ -2,23 +2,51 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Category {
-  id: string;
+  id: number;
   name: string;
   description: string | null;
-  parent_id: string | null;
+  parent_id: number | null;
+}
+
+interface Tag {
+  id: number;
+  name: string;
+  description: string | null;
+  color_hex: string | null;
+}
+
+interface CarouselImage {
+  id: number;
+  image_path: string;
+  alt_text: string | null;
+  display_order: number;
+}
+
+function getContrastColor(hexColor: string): string {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#292929ff' : '#ffffff';
 }
 
 const Index = () => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [carouselImages, setCarouselImages] = useState<CarouselImage[]>([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     const fetchCategories = async () => {
       const { data, error } = await supabase
         .from('categories')
         .select('id,name,description,parent_id')
-        .is('parent_id', null) // only primary categories
+        .is('parent_id', null) // Only primary categories
         .order('name');
 
       if (!error && data) {
@@ -26,18 +54,113 @@ const Index = () => {
       }
     };
 
+    const fetchTags = async () => {
+      const { data, error } = await supabase
+        .from('tags')
+        .select('id,name,description,color_hex')
+        .order('name');
+
+      if (!error && data) {
+        setTags(data as Tag[]);
+      }
+    };
+
+    const fetchCarouselImages = async () => {
+      const { data, error } = await supabase
+        .from('carousel_images')
+        .select('id,image_path,alt_text,display_order')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (!error && data) {
+        setCarouselImages(data as CarouselImage[]);
+      }
+    };
+
     fetchCategories();
+    fetchTags();
+    fetchCarouselImages();
   }, []);
+
+  // Carousel auto scrolling
+  useEffect(() => {
+    if (carouselImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [carouselImages.length]);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + carouselImages.length) % carouselImages.length);
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 text-center">
-        {/* Hero */}
-        <img
-          src="/hero.jpg"
-          alt="AllPaperPack hero"
-          className="mx-auto mb-12 w-full max-w-6xl aspect-[28/9] object-cover rounded-lg"
-        />
+        {/* Hero Carousel */}
+        <div className="relative mx-auto mb-12 w-full max-w-6xl">
+          {carouselImages.length > 0 ? (
+            <>
+              <div className="relative aspect-[28/9] overflow-hidden rounded-lg">
+                {carouselImages.map((image, index) => (
+                  <img
+                    key={image.id}
+                    src={image.image_path}
+                    alt={image.alt_text || 'AllPaperPack'}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                      index === currentSlide ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                ))}
+              </div>
+              
+              {carouselImages.length > 1 && (
+                <>
+                  {/* Navigation arrows */}
+                  <button
+                    onClick={prevSlide}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors"
+                    aria-label="Previous slide"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors"
+                    aria-label="Next slide"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+
+                  {/* Dots indicator */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {carouselImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentSlide(index)}
+                        className={`w-3 h-3 rounded-full transition-colors ${
+                          index === currentSlide ? 'bg-white' : 'bg-white/50'
+                        }`}
+                        aria-label={`Go to slide ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <img
+              src="/hero.jpg"
+              alt="AllPaperPack hero"
+              className="w-full aspect-[28/9] object-cover rounded-lg"
+            />
+          )}
+        </div>
 
         {/* Categories Section */}
         <div className="mb-6 flex items-center gap-3">
@@ -46,25 +169,45 @@ const Index = () => {
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 mb-12">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-12">
           {categories.map((category) => (
             <Link key={category.id} to={`/products?category=${category.id}`}>
-              <Button className="w-full h-28 flex flex-col justify-center items-center text-center whitespace-normal px-3">
-                <span className="font-tinos text-xl font-medium">{category.name}</span>
+              <Button 
+                className="w-full h-28 flex flex-col justify-center items-center text-center whitespace-normal px-3 shadow-md transition-all duration-200 hover:scale-105"
+              >
+                <span className="font-tinos text-2xl font-medium">{category.name}</span>
                 <span className="text-sm break-words leading-snug">{category.description}</span>
               </Button>
             </Link>
           ))}
         </div>
 
+        {/* Tags Section */}
         <div className="mb-6 flex items-center gap-3">
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
-          <h1 className="font-tinos text-[#0a3e06] text-3xl font-bold">Προτεινόμενα Προϊόντα</h1>
+          <h1 className="font-tinos text-[#0a3e06] text-3xl font-bold">Προτεινόμενα</h1>
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
         </div>
 
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 mb-12">
+          {tags.map((tag) => (
+            <Link key={tag.id} to={`/products?tag=${tag.id}`}>
+              <div
+                className="w-full h-36 rounded-md flex flex-col justify-center items-center text-center px-2 transition-all duration-200 hover:scale-105 shadow-md whitespace-normal hover:opacity-90"
+                style={{
+                  background: `linear-gradient(135deg, ${tag.color_hex} 0%, ${tag.color_hex}dd 100%)` || '#0a3e06',
+                  color: getContrastColor(tag.color_hex || '#0a3e06'),
+                }}
+              >
+                <span className="font-tinos text-2xl">{tag.name}</span>
+                {tag.description && (
+                  <span className="text-sm break-words leading-snug opacity-90">{tag.description}</span>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
-      <div className="h-24"/>
     </div>
   );
 };

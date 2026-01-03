@@ -55,9 +55,10 @@ export default function Auth() {
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    const fullName = formData.get('fullName') as string;
+    const name = formData.get('name') as string;
+    const surname = formData.get('surname') as string;
 
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email, password, name, surname);
 
     if (error) {
       toast({
@@ -125,15 +126,27 @@ export default function Auth() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-fullname">Ονοματεπώνυμο</Label>
-                  <Input
-                    id="signup-fullname"
-                    name="fullName"
-                    type="text"
-                    required
-                    placeholder="Your full name"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">Όνομα</Label>
+                    <Input
+                      id="signup-name"
+                      name="name"
+                      type="text"
+                      required
+                      placeholder="Όνομα"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-surname">Επώνυμο</Label>
+                    <Input
+                      id="signup-surname"
+                      name="surname"
+                      type="text"
+                      required
+                      placeholder="Επώνυμο"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>

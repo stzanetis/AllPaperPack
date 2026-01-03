@@ -7,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef, useCallback } from 'react'; // + useEffect/useState
 import { supabase } from '@/lib/supabase/client'; // + supabase
 
-type Category = { id: string; name: string; parent_id: string | null };
+type Category = { id: number; name: string; parent_id: number | null };
 
 export const Header = () => {
   const { user, isAdmin, signOut, profile } = useAuth();
@@ -16,9 +16,10 @@ export const Header = () => {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [bannerText, setBannerText] = useState('We Think Green 🌱');
 
   const primaryCategories = allCategories.filter((c) => c.parent_id === null);
-  const childrenByParent = primaryCategories.reduce<Record<string, Category[]>>((acc, parent) => {
+  const childrenByParent = primaryCategories.reduce<Record<number, Category[]>>((acc, parent) => {
     acc[parent.id] = allCategories.filter((c) => c.parent_id === parent.id);
     return acc;
   }, {});
@@ -31,7 +32,20 @@ export const Header = () => {
         .order('name', { ascending: true });
       setAllCategories((data as Category[]) || []);
     };
+
+    const loadBannerText = async () => {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'banner_text')
+        .single();
+      if (data) {
+        setBannerText(data.value);
+      }
+    };
+
     loadCats();
+    loadBannerText();
   }, []);
 
   const handleSignOut = async () => {
@@ -149,7 +163,7 @@ export const Header = () => {
                   <Link to="/account">
                     <Button className="bg-[#eaf2d5] hover:bg-primary border-[#eaf2d5] rounded-full" variant="outline" size="sm">
                       <User className="h-4 w-4" />
-                      <span className="text-sm">{profile?.full_name || user.email}</span>
+                      <span className="text-sm">{profile?.name || user.email}</span>
                     </Button>
                   </Link>
 
@@ -222,7 +236,7 @@ export const Header = () => {
 
       <div className="h-8 bg-primary">
         <p className="font-semibold text-center text-sm text-primary-foreground leading-8">
-          We Think Green...
+          {bannerText}
         </p>
       </div>
     </header>
