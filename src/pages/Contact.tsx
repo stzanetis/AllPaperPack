@@ -17,11 +17,11 @@ export default function Contact() {
     const to = 'info@allpaperpack.gr';
     const mailSubject = `[Επικοινωνία] ${subject || 'Χωρίς θέμα'} - ${fullName}`;
     const mailBody = `Όνομα: ${fullName}
-Email: ${email}
-Τηλέφωνο: ${phone}
+      Email: ${email}
+      Τηλέφωνο: ${phone}
 
-Μήνυμα:
-${message}`;
+      Μήνυμα:
+        ${message}`;
     window.location.href = `mailto:${to}?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(mailBody)}`;
   };
 
@@ -39,14 +39,14 @@ ${message}`;
             <MapPin className="h-5 w-5 text-primary mt-1" />
             <div>
               <div className="font-medium">Διεύθυνση</div>
-              <div className="text-muted-foreground">Λ. Παράδειγμα 123, Αθήνα</div>
+              <div className="text-muted-foreground">Οδός Μπαφρας 20, Γιαννιτσά 58100</div>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <Phone className="h-5 w-5 text-primary mt-1" />
             <div>
               <div className="font-medium">Τηλέφωνο</div>
-              <a className="text-muted-foreground hover:text-primary" href="tel:+302100000000">+30 210 0000000</a>
+              <a className="text-muted-foreground hover:text-primary" href="tel:69996159627">69996159627</a>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -57,11 +57,11 @@ ${message}`;
             </div>
           </div>
 
-          {/* Optional map embed */}
+          {/* Map embed */}
           <div className="aspect-[16/9] w-full overflow-hidden rounded-lg border">
             <iframe
               title="Map"
-              src="https://maps.google.com/maps?q=Giannitsa%20Greece&t=&z=13&ie=UTF8&iwloc=&output=embed"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3020.73675478464!2d22.410808975524787!3d40.789801132849796!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1357cff10f138ba9%3A0xfaeca9e39737b733!2zzpzPgM6xz4bPgc6xz4IgMjAsIM6TzrnOsc69zr3Ouc-Ez4POrCA1ODEgMDA!5e0!3m2!1sel!2sgr!4v1767491261652!5m2!1sel!2sgr"
               className="h-full w-full"
               loading="lazy"
             />

@@ -221,6 +221,7 @@ export default function Products() {
               placeholder="Αναζήτηση προϊόντων..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="rounded-full"
             />
           </div>
           
@@ -230,13 +231,13 @@ export default function Products() {
               value={selectedParentCategory}
               onValueChange={handleParentCategoryChange}
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-full">
                 <SelectValue placeholder="Κατηγορία" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Όλες οι Κατηγορίες</SelectItem>
+              <SelectContent className="rounded-2xl">
+                <SelectItem className="rounded-xl" value="all">Όλες οι Κατηγορίες</SelectItem>
                 {parentCategories.map((category) => (
-                  <SelectItem key={category.id} value={category.id.toString()}>
+                  <SelectItem className="rounded-xl" key={category.id} value={category.id.toString()}>
                     {category.name}
                   </SelectItem>
                 ))}

@@ -27,12 +27,28 @@ interface CarouselImage {
 
 function getContrastColor(hexColor: string): string {
   const hex = hexColor.replace('#', '');
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
+  let r = parseInt(hex.substring(0, 2), 16);
+  let g = parseInt(hex.substring(2, 4), 16);
+  let b = parseInt(hex.substring(4, 6), 16);
 
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5 ? '#292929ff' : '#ffffff';
+  // Calculate luminance
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+
+  // If dark, brighten; if light, darken
+  if (luminance < 128) {
+    // Brighten by 60%
+    r = Math.min(255, Math.floor(r + (255 - r) * 0.6));
+    g = Math.min(255, Math.floor(g + (255 - g) * 0.6));
+    b = Math.min(255, Math.floor(b + (255 - b) * 0.6));
+  } else {
+    // Darken by 60%
+    r = Math.floor(r * 0.4);
+    g = Math.floor(g * 0.4);
+    b = Math.floor(b * 0.4);
+  }
+
+  const toHex = (v: number) => v.toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 const Index = () => {

@@ -132,12 +132,12 @@ export default function AdminDashboard() {
 
       {/* Management Tabs */}
       <Tabs defaultValue="products" className="space-y-4">
-        <TabsList className="rounded-full">
-          <TabsTrigger className="rounded-full" value="products">Προϊόντα</TabsTrigger>
-          <TabsTrigger className="rounded-full" value="categories">Κατηγορίες</TabsTrigger>
-          <TabsTrigger className="rounded-full" value="tags">Ετικέτες</TabsTrigger>
-          <TabsTrigger className="rounded-full" value="orders">Παραγγελίες</TabsTrigger>
-          <TabsTrigger className="rounded-full" value="settings">Ρυθμίσεις</TabsTrigger>
+        <TabsList className="h-auto flex-wrap gap-1 p-1 rounded-2xl">
+          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="products">Προϊόντα</TabsTrigger>
+          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="categories">Κατηγορίες</TabsTrigger>
+          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="tags">Ετικέτες</TabsTrigger>
+          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="orders">Παραγγελίες</TabsTrigger>
+          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="settings">Ρυθμίσεις</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products">

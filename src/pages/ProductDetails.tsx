@@ -145,8 +145,8 @@ export default function ProductDetails() {
 
   return (
     <div className="container mx-auto px-4 py-10">
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="aspect-square overflow-hidden rounded-lg bg-muted">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+        <div className="lg:col-span-2 aspect-square max-w-md mx-auto overflow-hidden rounded-lg bg-muted">
           <img
             src={product.image_path || '/placeholder.svg'}
             alt={product.name}
@@ -154,7 +154,7 @@ export default function ProductDetails() {
           />
         </div>
 
-        <div>
+        <div className="lg:col-span-3">
           {/* Breadcrumb: Category → Subcategory */}
           <div className="mb-3 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -206,7 +206,6 @@ export default function ProductDetails() {
           {/* Variant Selection */}
           {product.variants.length > 1 && (
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Επιλέξτε Παραλλαγή</label>
               <Select
                 value={selectedVariantId?.toString() || ''}
                 onValueChange={(value) => {
@@ -214,15 +213,16 @@ export default function ProductDetails() {
                   setQty(1);
                 }}
               >
-                <SelectTrigger className="w-full md:w-64">
-                  <SelectValue placeholder="Επιλέξτε παραλλαγή" />
+                <SelectTrigger className="w-full md:w-64 rounded-full">
+                  <SelectValue placeholder="Επιλέξτε είδος" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-2xl">
                   {product.variants.map((variant) => (
                     <SelectItem 
                       key={variant.id} 
                       value={variant.id.toString()}
                       disabled={variant.stock === 0}
+                      className="rounded-xl"
                     >
                       {variant.variant_name} - {variant.price.toFixed(2)}€
                       {variant.stock === 0 && ' (Εξαντλήθηκε)'}

@@ -27,6 +27,8 @@ interface CartContextType {
   updateQuantity: (variantId: number, quantity: number) => Promise<void>;
   removeFromCart: (variantId: number) => Promise<void>;
   clearCart: () => Promise<void>;
+  subtotal: number;
+  vatAmount: number;
   total: number;
   itemCount: number;
 }
@@ -212,7 +214,18 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const total = items.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0);
+  // Calculate subtotal (without VAT)
+  const subtotal = items.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0);
+  
+  // Calculate total VAT amount
+  const vatAmount = items.reduce((sum, item) => {
+    const itemPrice = item.variant.price * item.quantity;
+    const itemVat = itemPrice * (item.variant.base.vat / 100);
+    return sum + itemVat;
+  }, 0);
+  
+  // Total including VAT
+  const total = subtotal + vatAmount;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -223,6 +236,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       updateQuantity,
       removeFromCart,
       clearCart,
+      subtotal,
+      vatAmount,
       total,
       itemCount,
     }}>

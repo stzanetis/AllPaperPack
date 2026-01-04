@@ -21,19 +21,18 @@ export const Footer = () => {
         <div>
           <h4 className="text-white mb-3 font-semibold">Πλοήγηση</h4>
           <nav className="flex flex-col gap-2 text-sm">
-            <Link to="/" className="text-white hover:text-primary">Αρχική</Link>
-            <Link to="/products" className="text-white hover:text-primary">Προϊόντα</Link>
-            <Link to="/contact" className="text-white hover:text-primary">Επικοινωνία</Link>
+            <Link to="/" className="text-white hover:text-[#FFD700]">Αρχική</Link>
+            <Link to="/products" className="text-white hover:text-[#FFD700]">Προϊόντα</Link>
+            <Link to="/contact" className="text-white hover:text-[#FFD700]">Επικοινωνία</Link>
           </nav>
         </div>
 
         <div>
           <h4 className="text-white mb-3 font-semibold">Επικοινωνία</h4>
           <ul className="space-y-2 text-sm text-white">
-            <li>Email: <a className="text-white hover:text-primary" href="mailto:info@allpaperpack.gr">info@allpaperpack.gr</a></li>
-            <li>Τηλ: <a className="text-white hover:text-primary" href="tel:+306996159627">+30 699 615 9627</a></li>
-            <li>Facebook: <a className="text-white hover:text-primary" href="https://www.facebook.com/dimitris.tzanetis">Dimitris Tzanetis</a></li>
-            
+            <li>Email: <a className="text-white hover:text-[#FFD700]" href="mailto:info@allpaperpack.gr">info@allpaperpack.gr</a></li>
+            <li>Τηλ: <a className="text-white hover:text-[#FFD700]" href="tel:+306996159627">+30 699 615 9627</a></li>
+            <li>Facebook: <a className="text-white hover:text-[#FFD700]" href="https://www.facebook.com/dimitris.tzanetis">Dimitris Tzanetis</a></li>
           </ul>
         </div>
       </div>
