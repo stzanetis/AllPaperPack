@@ -338,7 +338,7 @@ AS $$
 BEGIN
     UPDATE public.orders
     SET total = (
-        SELECT COALESCE(SUM(quantity * unit_price), 0)
+        SELECT COALESCE(SUM(quantity * unit_price * (1 + vat / 100.0)), 0)
         FROM public.order_has_variants
         WHERE order_id = COALESCE(NEW.order_id, OLD.order_id)
     )
