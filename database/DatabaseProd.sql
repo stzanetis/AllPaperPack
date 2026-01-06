@@ -469,6 +469,7 @@ CREATE TABLE public.carousel_images (
     id SERIAL PRIMARY KEY,
     image_path TEXT NOT NULL,
     alt_text TEXT,
+    link_url TEXT,
     display_order INTEGER NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP NOT NULL DEFAULT now()

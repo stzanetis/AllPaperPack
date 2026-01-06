@@ -22,6 +22,7 @@ interface CarouselImage {
   id: number;
   image_path: string;
   alt_text: string | null;
+  link_url: string | null;
   display_order: number;
 }
 
@@ -84,7 +85,7 @@ const Index = () => {
     const fetchCarouselImages = async () => {
       const { data, error } = await supabase
         .from('carousel_images')
-        .select('id,image_path,alt_text,display_order')
+        .select('id,image_path,alt_text,link_url,display_order')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
 
@@ -119,55 +120,100 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 text-center">
         {/* Hero Carousel */}
-        <div className="relative mx-auto mb-12 w-full max-w-6xl">
+        <div className="relative mb-12 w-full max-w-7xl">
           {carouselImages.length > 0 ? (
             <>
               <div className="relative aspect-[28/9] overflow-hidden rounded-lg">
-                {carouselImages.map((image, index) => (
+              {carouselImages.map((image, index) => {
+                const isActive = index === currentSlide;
+                
+                // If there's a link, wrap the image in a Link component
+                if (image.link_url) {
+                  const isExternal = image.link_url.startsWith('http');
+                  if (isExternal) {
+                    return (
+                      <a
+                        key={image.id}
+                        href={image.link_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`absolute inset-0 cursor-pointer transition-opacity duration-500 ${
+                          isActive ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                        }`}
+                      >
+                        <img
+                          src={image.image_path}
+                          alt={image.alt_text || 'Carousel slide'}
+                          className="w-full h-full object-cover"
+                        />
+                      </a>
+                    );
+                  } else {
+                    return (
+                      <Link
+                        key={image.id}
+                        to={image.link_url}
+                        className={`absolute inset-0 cursor-pointer transition-opacity duration-500 ${
+                          isActive ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                        }`}
+                      >
+                        <img
+                          src={image.image_path}
+                          alt={image.alt_text || 'Carousel slide'}
+                          className="w-full h-full object-cover"
+                        />
+                      </Link>
+                    );
+                  }
+                }
+
+                // No link - regular image
+                return (
                   <img
                     key={image.id}
                     src={image.image_path}
-                    alt={image.alt_text || 'AllPaperPack'}
+                    alt={image.alt_text || 'Carousel slide'}
                     className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
-                      index === currentSlide ? 'opacity-100' : 'opacity-0'
+                      isActive ? 'opacity-100 z-0' : 'opacity-0 z-0'
                     }`}
                   />
-                ))}
-              </div>
-              
-              {carouselImages.length > 1 && (
-                <>
-                  {/* Navigation arrows */}
-                  <button
-                    onClick={prevSlide}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors"
-                    aria-label="Previous slide"
-                  >
-                    <ChevronLeft className="h-6 w-6" />
-                  </button>
-                  <button
-                    onClick={nextSlide}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors"
-                    aria-label="Next slide"
-                  >
-                    <ChevronRight className="h-6 w-6" />
-                  </button>
+                );
+              })}
+            </div>
+            
+            {carouselImages.length > 1 && (
+              <>
+                {/* Navigation arrows */}
+                <button
+                  onClick={prevSlide}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors z-20"
+                  aria-label="Previous slide"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors z-20"
+                  aria-label="Next slide"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
 
-                  {/* Dots indicator */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    {carouselImages.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentSlide(index)}
-                        className={`w-3 h-3 rounded-full transition-colors ${
-                          index === currentSlide ? 'bg-white' : 'bg-white/50'
-                        }`}
-                        aria-label={`Go to slide ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
+                {/* Dots indicator */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                  {carouselImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentSlide(index)}
+                      className={`w-3 h-3 rounded-full transition-colors ${
+                        index === currentSlide ? 'bg-white' : 'bg-white/50'
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
             </>
           ) : (
             <img
@@ -181,7 +227,7 @@ const Index = () => {
         {/* Categories Section */}
         <div className="mb-6 flex items-center gap-3">
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
-          <h1 className="font-tinos text-[#0a3e06] text-3xl font-bold">Κατηγορίες</h1>
+          <h1 className="font-tinos text-3xl font-bold">Κατηγορίες</h1>
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
         </div>
 
@@ -190,6 +236,9 @@ const Index = () => {
             <Link key={category.id} to={`/products?category=${category.id}`}>
               <Button 
                 className="w-full h-28 flex flex-col justify-center items-center text-center whitespace-normal px-3 shadow-md transition-all duration-200 hover:scale-105"
+                style={{
+                  color: getContrastColor('#99b66b')
+                }}
               >
                 <span className="font-tinos text-2xl font-medium">{category.name}</span>
                 <span className="text-sm break-words leading-snug">{category.description}</span>
@@ -201,7 +250,7 @@ const Index = () => {
         {/* Tags Section */}
         <div className="mb-6 flex items-center gap-3">
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
-          <h1 className="font-tinos text-[#0a3e06] text-3xl font-bold">Προτεινόμενα</h1>
+          <h1 className="font-tinos text-3xl font-bold">Προτεινόμενα</h1>
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
         </div>
 
@@ -212,7 +261,7 @@ const Index = () => {
                 className="w-full h-36 rounded-md flex flex-col justify-center items-center text-center px-2 transition-all duration-200 hover:scale-105 shadow-md whitespace-normal hover:opacity-90"
                 style={{
                   background: `linear-gradient(135deg, ${tag.color_hex} 0%, ${tag.color_hex}dd 100%)` || '#0a3e06',
-                  color: getContrastColor(tag.color_hex || '#0a3e06'),
+                  color: getContrastColor(tag.color_hex || '#fdfdfdff')
                 }}
               >
                 <span className="font-tinos text-2xl">{tag.name}</span>

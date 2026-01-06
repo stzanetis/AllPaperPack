@@ -330,6 +330,7 @@ export type Database = {
           id: number
           image_path: string
           alt_text: string | null
+          link_url: string | null
           display_order: number
           is_active: boolean
           created_at: string
@@ -338,6 +339,7 @@ export type Database = {
           id?: number
           image_path: string
           alt_text?: string | null
+          link_url?: string | null
           display_order?: number
           is_active?: boolean
           created_at?: string
@@ -346,6 +348,7 @@ export type Database = {
           id?: number
           image_path?: string
           alt_text?: string | null
+          link_url?: string | null
           display_order?: number
           is_active?: boolean
           created_at?: string

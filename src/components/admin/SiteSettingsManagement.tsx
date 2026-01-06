@@ -7,13 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Trash2, GripVertical, Image, Save } from 'lucide-react';
+import { Plus, Trash2, Image, Save, Edit, ChevronUp, ChevronDown } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
 interface CarouselImage {
   id: number;
   image_path: string;
   alt_text: string | null;
+  link_url: string | null;
   display_order: number;
   is_active: boolean;
   created_at: string;
@@ -26,10 +27,12 @@ export const SiteSettingsManagement = () => {
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editingImage, setEditingImage] = useState<CarouselImage | null>(null);
 
   // New image form
   const [newImageUrl, setNewImageUrl] = useState('');
   const [newAltText, setNewAltText] = useState('');
+  const [newLinkUrl, setNewLinkUrl] = useState('');
 
   const fetchSettings = async () => {
     // Fetch banner text
@@ -93,19 +96,36 @@ export const SiteSettingsManagement = () => {
 
     setLoading(true);
 
-    // Get max display_order
-    const maxOrder = carouselImages.length > 0 
-      ? Math.max(...carouselImages.map(img => img.display_order)) 
-      : 0;
+    let error;
+    if (editingImage) {
+      // Update existing image
+      const { error: updateError } = await supabase
+        .from('carousel_images')
+        .update({
+          image_path: newImageUrl.trim(),
+          alt_text: newAltText.trim() || null,
+          link_url: newLinkUrl.trim() || null,
+        })
+        .eq('id', editingImage.id);
+      error = updateError;
+    } else {
+      // Get max display_order
+      const maxOrder = carouselImages.length > 0 
+        ? Math.max(...carouselImages.map(img => img.display_order)) 
+        : 0;
 
-    const { error } = await supabase
-      .from('carousel_images')
-      .insert({
-        image_path: newImageUrl.trim(),
-        alt_text: newAltText.trim() || null,
-        display_order: maxOrder + 1,
-        is_active: true,
-      });
+      // Insert new image
+      const { error: insertError } = await supabase
+        .from('carousel_images')
+        .insert({
+          image_path: newImageUrl.trim(),
+          alt_text: newAltText.trim() || null,
+          link_url: newLinkUrl.trim() || null,
+          display_order: maxOrder + 1,
+          is_active: true,
+        });
+      error = insertError;
+    }
 
     if (error) {
       toast({
@@ -116,10 +136,12 @@ export const SiteSettingsManagement = () => {
     } else {
       toast({
         title: 'Επιτυχία',
-        description: 'Η εικόνα προστέθηκε.',
+        description: editingImage ? 'Η εικόνα ενημερώθηκε.' : 'Η εικόνα προστέθηκε.',
       });
       setNewImageUrl('');
       setNewAltText('');
+      setNewLinkUrl('');
+      setEditingImage(null);
       setDialogOpen(false);
       fetchCarouselImages();
     }
@@ -242,6 +264,22 @@ export const SiteSettingsManagement = () => {
     fetchCarouselImages();
   };
 
+  const openEditDialog = (image: CarouselImage) => {
+    setEditingImage(image);
+    setNewImageUrl(image.image_path);
+    setNewAltText(image.alt_text || '');
+    setNewLinkUrl(image.link_url || '');
+    setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditingImage(null);
+    setNewImageUrl('');
+    setNewAltText('');
+    setNewLinkUrl('');
+  };
+
   const bannerChanged = bannerText !== originalBannerText;
 
   return (
@@ -281,7 +319,7 @@ export const SiteSettingsManagement = () => {
               Διαχειριστείτε τις εικόνες που εμφανίζονται στο carousel της αρχικής σελίδας.
             </CardDescription>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) closeDialog(); else setDialogOpen(true); }}>
             <DialogTrigger asChild>
               <Button className="rounded-full hover:bg-primary/90">
                 <Plus className="h-4 w-4 mr-2" />
@@ -290,7 +328,7 @@ export const SiteSettingsManagement = () => {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Προσθήκη Εικόνας</DialogTitle>
+                <DialogTitle>{editingImage ? 'Επεξεργασία Εικόνας' : 'Προσθήκη Εικόνας'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleAddImage} className="space-y-4">
                 <div className="space-y-2">
@@ -330,8 +368,18 @@ export const SiteSettingsManagement = () => {
                     placeholder="Περιγραφή εικόνας"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="linkUrl">Σύνδεσμος (προαιρετικό)</Label>
+                  <Input
+                    id="linkUrl"
+                    value={newLinkUrl}
+                    onChange={(e) => setNewLinkUrl(e.target.value)}
+                    placeholder="/products ή https://example.com"
+                  />
+                  <p className="text-xs text-muted-foreground">Αν οριστεί, η εικόνα θα είναι κλικ και θα ανοίγει αυτόν τον σύνδεσμο</p>
+                </div>
                 <Button type="submit" className="w-full" disabled={loading || !newImageUrl}>
-                  Προσθήκη
+                  {editingImage ? 'Ενημέρωση' : 'Προσθήκη'}
                 </Button>
               </form>
             </DialogContent>
@@ -349,7 +397,7 @@ export const SiteSettingsManagement = () => {
                 <TableRow>
                   <TableHead className="w-12">Σειρά</TableHead>
                   <TableHead className="w-24">Προεπισκόπηση</TableHead>
-                  <TableHead>URL / Alt Text</TableHead>
+                  <TableHead>URL / Alt Text / Link</TableHead>
                   <TableHead className="w-24">Ενεργό</TableHead>
                   <TableHead className="w-32">Ενέργειες</TableHead>
                 </TableRow>
@@ -364,16 +412,18 @@ export const SiteSettingsManagement = () => {
                           size="sm"
                           onClick={() => moveImage(image.id, 'up')}
                           disabled={index === 0}
+                          className="hover:bg-primary rounded-full w-8 h-8"
                         >
-                          ↑
+                          <ChevronUp className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => moveImage(image.id, 'down')}
                           disabled={index === carouselImages.length - 1}
+                          className="hover:bg-primary rounded-full w-8 h-8"
                         >
-                          ↓
+                          <ChevronDown className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -389,6 +439,9 @@ export const SiteSettingsManagement = () => {
                       {image.alt_text && (
                         <div className="text-xs text-muted-foreground">{image.alt_text}</div>
                       )}
+                      {image.link_url && (
+                        <div className="text-xs text-blue-600 truncate">🔗 {image.link_url}</div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Switch
@@ -397,14 +450,24 @@ export const SiteSettingsManagement = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteImage(image.id)}
-                        className="text-destructive hover:bg-red-400 rounded-full hover:text-white"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(image)}
+                          className="hover:bg-primary rounded-full w-10 h-10"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteImage(image.id)}
+                          className="text-destructive hover:bg-red-400 rounded-full hover:text-white w-10 h-10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
