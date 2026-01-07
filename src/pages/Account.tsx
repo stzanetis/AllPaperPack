@@ -193,9 +193,10 @@ export default function Account() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-10 max-w-5xl">
-      <h1 className="text-2xl md:text-3xl font-bold mb-2">Ο λογαριασμός μου</h1>
-      <p className="text-muted-foreground mb-8">Διαχειριστείτε τα στοιχεία σας και δείτε το ιστορικό παραγγελιών</p>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="font-tinos text-[#0a3e06] text-4xl font-bold mb-2">Ο λογαριασμός μου</h1>
+      <p className="text-muted-foreground mb-2">Διαχειριστείτε τα στοιχεία σας και δείτε το ιστορικό παραγγελιών</p>
+      <hr className="mt-1 flex-1 border-gray-300 mb-8" aria-hidden />
 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 max-w-md rounded-full">
@@ -224,22 +225,22 @@ export default function Account() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Όνομα</Label>
+                    <div className="space-y-1">
+                      <Label className="ml-2" htmlFor="name">Όνομα</Label>
                       <Input className="rounded-full" id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Όνομα" />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="surname">Επώνυμο</Label>
+                    <div className="space-y-1">
+                      <Label className="ml-2" htmlFor="surname">Επώνυμο</Label>
                       <Input className="rounded-full" id="surname" value={surname} onChange={(e) => setSurname(e.target.value)} placeholder="Επώνυμο" />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                  <div className="space-y-1">
+                    <Label className="ml-2" htmlFor="email">Email</Label>
                     <Input className="rounded-full" id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
                     <p className="text-xs text-muted-foreground">Η αλλαγή email απαιτεί επιβεβαίωση</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="telephone">Τηλέφωνο</Label>
+                  <div className="space-y-1">
+                    <Label className="ml-2" htmlFor="telephone">Τηλέφωνο</Label>
                     <Input className="rounded-full" id="telephone" value={telephone} onChange={(e) => setTelephone(e.target.value)} placeholder="+30 ..." />
                   </div>
                 </CardContent>
@@ -255,18 +256,18 @@ export default function Account() {
                   <CardDescription>Η διεύθυνση αποστολής των παραγγελιών σας</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="street">Οδός & Αριθμός</Label>
-                    <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Παράδειγμα 123" />
+                  <div className="space-y-1">
+                    <Label className="ml-2" htmlFor="street">Οδός & Αριθμός</Label>
+                    <Input className="rounded-full" id="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Παράδειγμα 123" />
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">Πόλη</Label>
-                      <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Αθήνα" />
+                    <div className="space-y-1">
+                      <Label className="ml-2" htmlFor="city">Πόλη</Label>
+                      <Input className="rounded-full" id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Αθήνα" />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="zip">Τ.Κ.</Label>
-                      <Input id="zip" value={zip} onChange={(e) => setZip(e.target.value)} placeholder="12345" />
+                    <div className="space-y-1">
+                      <Label className="ml-2" htmlFor="zip">Τ.Κ.</Label>
+                      <Input className="rounded-full" id="zip" value={zip} onChange={(e) => setZip(e.target.value)} placeholder="12345" />
                     </div>
                   </div>
                 </CardContent>
@@ -282,13 +283,13 @@ export default function Account() {
                   <CardDescription>Για έκδοση τιμολογίου</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="company">Επωνυμία εταιρείας</Label>
-                    <Input id="company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Επωνυμία εταιρείας" />
+                  <div className="space-y-1">
+                    <Label className="ml-2" htmlFor="company">Επωνυμία εταιρείας</Label>
+                    <Input className="rounded-full" id="company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Επωνυμία εταιρείας" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="afm">ΑΦΜ</Label>
-                    <Input id="afm" value={afmNumber} onChange={(e) => setAfmNumber(e.target.value)} placeholder="123456789" />
+                  <div className="space-y-1">
+                    <Label className="ml-2" htmlFor="afm">ΑΦΜ</Label>
+                    <Input className="rounded-full" id="afm" value={afmNumber} onChange={(e) => setAfmNumber(e.target.value)} placeholder="123456789" minLength={9} maxLength={9} />
                   </div>
                 </CardContent>
               </Card>
@@ -303,44 +304,42 @@ export default function Account() {
                   <CardDescription>Αφήστε κενό αν δεν θέλετε αλλαγή</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">Νέος κωδικός</Label>
-                    <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
+                  <div className="space-y-1">
+                    <Label className="ml-2" htmlFor="newPassword">Νέος κωδικός</Label>
+                    <Input className="rounded-full" id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Επιβεβαίωση κωδικού</Label>
-                    <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+                  <div className="space-y-1">
+                    <Label className="ml-2" htmlFor="confirmPassword">Επιβεβαίωση κωδικού</Label>
+                    <Input className="rounded-full" id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Messages and Submit */}
-            <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <Button type="submit" disabled={saving} size="lg" className="rounded-3xl">
+              {saving ? 'Αποθήκευση…' : 'Αποθήκευση αλλαγών'}
+              </Button>
+              <div className="flex flex-col gap-4 flex-1">
               {err && (
-                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
-                  {err}
+                <div className="p-3 text-sm rounded-3xl text-red-600 bg-red-50 border border-red-200">
+                {err}
                 </div>
               )}
               {msg && (
-                <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg">
-                  {msg}
+                <div className="p-3 text-sm rounded-3xl text-green-600 bg-green-50 border border-green-200">
+                {msg}
                 </div>
               )}
-              <Button type="submit" disabled={saving} size="lg" className="w-full sm:w-auto">
-                {saving ? 'Αποθήκευση…' : 'Αποθήκευση αλλαγών'}
-              </Button>
+              </div>
             </div>
           </form>
         </TabsContent>
 
         {/* Order History Tab */}
         <TabsContent value="orders">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ιστορικό παραγγελιών</CardTitle>
-              <CardDescription>Δείτε όλες τις παραγγελίες σας</CardDescription>
-            </CardHeader>
+          <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
             <CardContent>
               {ordersLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -352,17 +351,17 @@ export default function Account() {
                   <h3 className="text-lg font-medium mb-2">Δεν έχετε παραγγελίες</h3>
                   <p className="text-muted-foreground mb-4">Ξεκινήστε τις αγορές σας τώρα!</p>
                   <Link to="/products">
-                    <Button>Δείτε τα προϊόντα</Button>
+                    <Button className="rounded-3xl">Δείτε τα προϊόντα</Button>
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 pt-6">
                   {orders.map((order) => {
                     const isExpanded = expandedOrders.has(order.id);
                     const statusInfo = statusLabels[order.status] || { label: order.status, variant: 'secondary' as const };
 
                     return (
-                      <div key={order.id} className="border rounded-lg overflow-hidden">
+                      <div key={order.id} className="border rounded-2xl overflow-hidden">
                         {/* Order Header */}
                         <button
                           onClick={() => toggleOrderExpanded(order.id)}
@@ -370,7 +369,7 @@ export default function Account() {
                         >
                           <div className="flex items-center gap-4 text-left">
                             <div>
-                              <div className="font-medium">Παραγγελία #{order.id}</div>
+                              <div className="font-medium">Παραγγελία #{orders.indexOf(order) + 1}</div>
                               <div className="text-sm text-muted-foreground">{formatDate(order.created_at)}</div>
                             </div>
                           </div>

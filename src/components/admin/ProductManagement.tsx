@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash2, ChevronDown, ChevronUp, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronDown, ChevronUp, Package, ChevronRight } from 'lucide-react';
 
 interface ProductVariant {
   id: number;
@@ -41,6 +41,7 @@ interface ProductBase {
 interface Category {
   id: number;
   name: string;
+  parent_id: number | null;
 }
 
 interface ProductManagementProps {
@@ -104,7 +105,8 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
-      .select('id, name')
+      .select('id, name, parent_id')
+      .order('parent_id', { ascending: true, nullsFirst: true })
       .order('name');
 
     if (error) {
@@ -342,19 +344,17 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
   };
 
   return (
-    <Card>
+    <Card className="rounded-3xl">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Διαχείριση Προϊόντων</CardTitle>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}
-                    className="rounded-full hover:bg-primary"
-            >
+            <Button onClick={resetForm} className="rounded-full hover:bg-primary">
               <Plus className="h-4 w-4 mr-2" />
               Νέο Προϊόν
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingProduct ? 'Επεξεργασία Προϊόντος' : 'Νέο Προϊόν'}
@@ -362,59 +362,81 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Όνομα</Label>
+                <Label className="ml-2" htmlFor="name">Όνομα</Label>
                 <Input
                   id="name"
                   name="name"
                   required
+                  className="rounded-3xl"
                   defaultValue={editingProduct?.name || ''}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">Περιγραφή</Label>
+                <Label className="ml-2" htmlFor="description">Περιγραφή</Label>
                 <Textarea
                   id="description"
                   name="description"
+                  className="rounded-2xl"
                   defaultValue={editingProduct?.description || ''}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="vat">ΦΠΑ (%)</Label>
+                <Label className="ml-2" htmlFor="vat">ΦΠΑ (%)</Label>
                 <Input
                   id="vat"
                   name="vat"
                   type="number"
                   required
+                  className="rounded-3xl"
                   defaultValue={editingProduct?.vat || 24}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category_id">Κατηγορία</Label>
+                <Label className="ml-2" htmlFor="category_id">Κατηγορία</Label>
                 <Select name="category_id" defaultValue={editingProduct?.category_id?.toString() || ''}>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-3xl">
                     <SelectValue placeholder="Επιλέξτε κατηγορία" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
+                  <SelectContent className="rounded-2xl">
+                    {categories.filter(c => !c.parent_id).map((parentCategory) => (
+                      <>
+                        <SelectItem 
+                          className="rounded-xl font-semibold"
+                          key={parentCategory.id} 
+                          value={parentCategory.id.toString()}
+                        >
+                          {parentCategory.name}
+                        </SelectItem>
+                        {categories.filter(c => c.parent_id === parentCategory.id).map((subCategory) => (
+                          <SelectItem 
+                            className="rounded-xl pl-8 text-muted-foreground"
+                            key={subCategory.id} 
+                            value={subCategory.id.toString()}
+                          >
+                            <span className="flex items-center gap-1">
+                              <ChevronRight className="h-3 w-3" />
+                              {subCategory.name}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image_path">URL Εικόνας</Label>
+                <Label className="ml-2" htmlFor="image_path">URL Εικόνας</Label>
                 <Input
                   id="image_path"
                   name="image_path"
                   type="url"
+                  className="rounded-3xl"
                   defaultValue={editingProduct?.image_path || ''}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Ετικέτες</Label>
-                <div className="flex flex-wrap gap-2 p-2 border rounded-md">
+                <Label className="ml-2" >Ετικέτες</Label>
+                <div className="flex flex-wrap gap-2 p-2 border rounded-3xl">
                   {allTags.map((tag) => (
                     <Badge
                       key={tag.id}
@@ -434,7 +456,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                   )}
                 </div>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full rounded-3xl" disabled={loading}>
                 {loading ? 'Αποθήκευση...' : editingProduct ? 'Ενημέρωση' : 'Προσθήκη'}
               </Button>
             </form>
@@ -452,38 +474,41 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleVariantSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="variant_name">Όνομα Παραλλαγής</Label>
+              <div className="space-y-1">
+                <Label className="ml-2" htmlFor="variant_name">Όνομα Παραλλαγής</Label>
                 <Input
                   id="variant_name"
                   name="variant_name"
                   required
                   placeholder="π.χ. 500ml, Μεγάλο, Κόκκινο"
+                  className="rounded-3xl"
                   defaultValue={editingVariant?.variant_name || ''}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Τιμή (Χονδρική)</Label>
+              <div className="space-y-1">
+                <Label className="ml-2" htmlFor="price">Τιμή (Χονδρική)</Label>
                 <Input
                   id="price"
                   name="price"
                   type="number"
                   step="0.01"
                   required
+                  className="rounded-3xl"
                   defaultValue={editingVariant?.price || ''}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="stock">Απόθεμα</Label>
+              <div className="space-y-1">
+                <Label className="ml-2" htmlFor="stock">Απόθεμα</Label>
                 <Input
                   id="stock"
                   name="stock"
                   type="number"
                   required
+                  className="rounded-3xl"
                   defaultValue={editingVariant?.stock || 0}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full rounded-3xl" disabled={loading}>
                 {loading ? 'Αποθήκευση...' : editingVariant ? 'Ενημέρωση' : 'Προσθήκη'}
               </Button>
             </form>
@@ -513,7 +538,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                         variant="ghost"
                         size="icon"
                         onClick={() => toggleExpand(product.id)}
-                        className="rounded-full hover:bg-primary"
+                        className="rounded-full hover:bg-primary h-8 w-8"
                       >
                         {expandedProducts.has(product.id) ? (
                           <ChevronUp className="h-4 w-4" />
@@ -546,9 +571,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {product.variants?.length || 0} παραλλαγές
-                      </Badge>
+                      {product.variants?.length || 0}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

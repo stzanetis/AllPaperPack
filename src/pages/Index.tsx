@@ -227,7 +227,7 @@ const Index = () => {
         {/* Categories Section */}
         <div className="mb-6 flex items-center gap-3">
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
-          <h1 className="font-tinos text-3xl font-bold">Κατηγορίες</h1>
+          <h1 className="font-tinos text-[#0a3e06] text-3xl font-bold">Κατηγορίες</h1>
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
         </div>
 
@@ -235,7 +235,7 @@ const Index = () => {
           {categories.map((category) => (
             <Link key={category.id} to={`/products?category=${category.id}`}>
               <Button 
-                className="w-full h-28 flex flex-col justify-center items-center text-center whitespace-normal px-3 shadow-md transition-all duration-200 hover:scale-105"
+                className="rounded-2xl w-full h-28 flex flex-col justify-center items-center text-center whitespace-normal px-3 shadow-md transition-all duration-200 hover:scale-105"
                 style={{
                   color: getContrastColor('#99b66b')
                 }}
@@ -250,7 +250,7 @@ const Index = () => {
         {/* Tags Section */}
         <div className="mb-6 flex items-center gap-3">
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
-          <h1 className="font-tinos text-3xl font-bold">Προτεινόμενα</h1>
+          <h1 className="font-tinos text-[#0a3e06] text-3xl font-bold">Προτεινόμενα</h1>
           <hr className="mt-1 flex-1 border-gray-300" aria-hidden />
         </div>
 
@@ -258,7 +258,7 @@ const Index = () => {
           {tags.map((tag) => (
             <Link key={tag.id} to={`/products?tag=${tag.id}`}>
               <div
-                className="w-full h-36 rounded-md flex flex-col justify-center items-center text-center px-2 transition-all duration-200 hover:scale-105 shadow-md whitespace-normal hover:opacity-90"
+                className="w-full h-36 rounded-2xl flex flex-col justify-center items-center text-center px-2 transition-all duration-200 hover:scale-105 shadow-md whitespace-normal hover:opacity-90"
                 style={{
                   background: `linear-gradient(135deg, ${tag.color_hex} 0%, ${tag.color_hex}dd 100%)` || '#0a3e06',
                   color: getContrastColor(tag.color_hex || '#fdfdfdff')

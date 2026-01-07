@@ -119,7 +119,7 @@ export const TagManagement = () => {
   };
 
   return (
-    <Card>
+    <Card className="rounded-3xl">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Διαχείριση Ετικετών</CardTitle>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -138,24 +138,26 @@ export const TagManagement = () => {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Όνομα</Label>
+              <div className="space-y-1">
+                <Label className="ml-2" htmlFor="name">Όνομα</Label>
                 <Input
                   id="name"
                   name="name"
                   required
+                  className="rounded-3xl"
                   defaultValue={editingTag?.name || ''}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Περιγραφή</Label>
+              <div className="space-y-1">
+                <Label className="ml-2" htmlFor="description">Περιγραφή</Label>
                 <Textarea
                   id="description"
                   name="description"
+                  className="rounded-3xl"
                   defaultValue={editingTag?.description || ''}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="color_hex">Χρώμα</Label>
                 <div className="flex gap-2">
                   <Input
@@ -169,7 +171,7 @@ export const TagManagement = () => {
                     type="text"
                     placeholder="#3b82f6"
                     defaultValue={editingTag?.color_hex || ''}
-                    className="flex-1"
+                    className="flex-1 rounded-3xl"
                     onChange={(e) => {
                       const colorInput = document.getElementById('color_hex') as HTMLInputElement;
                       if (colorInput && /^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
@@ -182,7 +184,7 @@ export const TagManagement = () => {
                   Επιλέξτε χρώμα για την ετικέτα
                 </p>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full rounded-3xl" disabled={loading}>
                 {loading ? 'Αποθήκευση...' : editingTag ? 'Ενημέρωση' : 'Προσθήκη'}
               </Button>
             </form>

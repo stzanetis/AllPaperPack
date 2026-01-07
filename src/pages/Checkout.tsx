@@ -139,8 +139,9 @@ export default function Checkout() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-10 max-w-5xl">
-      <h1 className="text-2xl md:text-3xl font-semibold mb-6">Ολοκλήρωση Παραγγελίας</h1>
+    <div className="container mx-auto px-4 py-10">
+      <h1 className="font-tinos text-[#0a3e06] text-4xl font-bold mb-2">Ολοκλήρωση Παραγγελίας</h1>
+      <hr className="mt-1 flex-1 border-gray-300 mb-10" aria-hidden />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Form */}
@@ -152,7 +153,7 @@ export default function Checkout() {
           ) : (
             <form onSubmit={handlePlaceOrder} className="space-y-6">
               {noSaved && (
-                <div className="border rounded-md p-4 bg-amber-50">
+                <div className="border rounded-3xl p-4 bg-amber-50">
                   <div className="font-medium mb-1">Δεν βρέθηκαν πλήρη αποθηκευμένα στοιχεία.</div>
                   <p className="text-sm text-muted-foreground">
                     Συμπληρώστε τα στοιχεία σας παρακάτω ή <Link to="/account" className="text-primary underline">ενημερώστε τον λογαριασμό σας</Link>.
@@ -161,7 +162,7 @@ export default function Checkout() {
               )}
 
               {/* Mode Selection */}
-              <Card>
+              <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg">Επιλογή στοιχείων</CardTitle>
                 </CardHeader>
@@ -198,7 +199,7 @@ export default function Checkout() {
 
               {/* Saved Details Display */}
               {mode === 'saved' && savedComplete && (
-                <Card>
+                <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">Αποθηκευμένα στοιχεία</CardTitle>
                   </CardHeader>
@@ -231,7 +232,7 @@ export default function Checkout() {
               {mode === 'new' && (
                 <>
                   {/* Personal Info */}
-                  <Card>
+                  <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-lg">Προσωπικά στοιχεία</CardTitle>
                     </CardHeader>
@@ -254,7 +255,7 @@ export default function Checkout() {
                   </Card>
 
                   {/* Address */}
-                  <Card>
+                  <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-lg">Διεύθυνση αποστολής</CardTitle>
                     </CardHeader>
@@ -276,41 +277,31 @@ export default function Checkout() {
                     </CardContent>
                   </Card>
 
-                  {/* Billing Info (Optional) */}
-                  <Card>
+                  {/* Billing Info */}
+                  <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">Στοιχεία τιμολόγησης <span className="text-sm font-normal text-muted-foreground">(προαιρετικά)</span></CardTitle>
+                      <CardTitle className="text-lg">Στοιχεία τιμολόγησης</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <Label htmlFor="companyName">Επωνυμία εταιρείας</Label>
-                        <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Επωνυμία εταιρείας" />
+                        <Label htmlFor="companyName">Επωνυμία εταιρείας <span className="text-red-500">*</span></Label>
+                        <Input id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Επωνυμία εταιρείας" />
                       </div>
                       <div>
-                        <Label htmlFor="afmNumber">ΑΦΜ</Label>
-                        <Input id="afmNumber" value={afmNumber} onChange={(e) => setAfmNumber(e.target.value)} placeholder="123456789" />
+                        <Label htmlFor="afmNumber">ΑΦΜ <span className="text-red-500">*</span></Label>
+                        <Input id="afmNumber" required value={afmNumber} onChange={(e) => setAfmNumber(e.target.value)} placeholder="123456789" />
                       </div>
                     </CardContent>
                   </Card>
                 </>
               )}
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <Link to="/cart">
-                  <Button variant="outline" type="button">Πίσω στο Καλάθι</Button>
-                </Link>
-                <Button type="submit" disabled={cartIsEmpty || loading} className="flex-1 sm:flex-none">
-                  {loading ? 'Επεξεργασία...' : 'Ολοκλήρωση Παραγγελίας'}
-                </Button>
-              </div>
             </form>
           )}
         </div>
 
         {/* Right Column - Order Summary */}
         <div className="lg:col-span-1">
-          <Card className="sticky top-4">
+          <Card className="sticky top-4 rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
             <CardHeader>
               <CardTitle>Σύνοψη παραγγελίας</CardTitle>
             </CardHeader>
@@ -362,6 +353,21 @@ export default function Checkout() {
               </div>
             </CardContent>
           </Card>
+
+            {/* Actions */}
+            <div className="sticky top-80 mt-6 flex gap-3">
+            <Link to="/cart" className="flex-1">
+              <Button variant="outline" type="button" className="hover:bg-primary/90 rounded-3xl w-full">Πίσω στο Καλάθι</Button>
+            </Link>
+            <Button 
+              type="submit" 
+              disabled={cartIsEmpty || loading} 
+              className="rounded-3xl flex-1"
+              onClick={handlePlaceOrder}
+            >
+              {loading ? 'Επεξεργασία...' : 'Ολοκλήρωση Παραγγελίας'}
+            </Button>
+            </div>
         </div>
       </div>
     </div>

@@ -37,10 +37,11 @@ export default function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="font-tinos text-3xl text-[#0a3e06] font-semibold text-center mb-2">Καλάθι</h1>
-        <p className="text-muted-foreground mb-4">Το καλάθι σας είναι άδειο.</p>
-        <Button className="mb-52" onClick={() => navigate('/products')}>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="font-tinos text-[#0a3e06] text-4xl font-bold mb-2">Καλάθι</h1>
+      <p className="text-muted-foreground mb-2">Το καλάθι σας είναι άδειο</p>
+      <hr className="mt-1 flex-1 border-gray-300 mb-8" aria-hidden />
+        <Button className="mb-52 rounded-3xl" onClick={() => navigate('/products')}>
           Συνέχεια Αγορών
         </Button>
       </div>
@@ -49,12 +50,14 @@ export default function Cart() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="font-tinos text-3xl text-[#0a3e06] font-semibold text-center py-4 mb-4">Καλάθι</h1>
+      <h1 className="font-tinos text-[#0a3e06] text-4xl font-bold mb-2">Καλάθι</h1>
+      <p className="text-muted-foreground mb-2">Το καλάθι σας περιέχει {items.length} {items.length === 1 ? 'προϊόν' : 'προϊόντα'}</p>
+      <hr className="mt-1 flex-1 border-gray-300 mb-8" aria-hidden />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => (
-            <Card key={item.variant_id}>
+            <Card key={item.variant_id} className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105 border">
               <CardContent className="p-4 md:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <img
@@ -74,7 +77,7 @@ export default function Cart() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 sm:h-10 sm:w-10"
+                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full"
                         onClick={() => updateQuantity(item.variant_id, item.quantity - 1)}
                       >
                         <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -83,14 +86,14 @@ export default function Cart() {
                         type="number"
                         value={item.quantity}
                         onChange={(e) => updateQuantity(item.variant_id, parseInt(e.target.value) || 0)}
-                        className="w-14 sm:w-20 text-center h-8 sm:h-10"
+                        className="w-14 sm:w-20 text-center h-8 sm:h-10 rounded-full"
                         min="0"
                         max={item.variant.stock}
                       />
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 sm:h-10 sm:w-10"
+                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full"
                         onClick={() => updateQuantity(item.variant_id, item.quantity + 1)}
                         disabled={item.quantity >= item.variant.stock}
                       >
@@ -104,10 +107,10 @@ export default function Cart() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-10 w-10 hover:bg-red-400 rounded-full group"
                         onClick={() => removeFromCart(item.variant_id)}
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2 className="h-4 w-4 text-red-500 group-hover:text-white" />
                       </Button>
                     </div>
                   </div>
@@ -118,7 +121,7 @@ export default function Cart() {
         </div>
 
         <div className="lg:col-span-1">
-          <Card>
+          <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105 border">
             <CardHeader>
               <CardTitle>Σύνοψη Παραγγελίας</CardTitle>
             </CardHeader>
@@ -132,6 +135,10 @@ export default function Cart() {
                   <span>ΦΠΑ</span>
                   <span>€{vatAmount.toFixed(2)}</span>
                 </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Μεταφορικά</span>
+                  <span>Κατόπιν Συνενόησης</span>
+                </div>
                 <hr />
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Σύνολο</span>
@@ -141,17 +148,17 @@ export default function Cart() {
             </CardContent>
             <CardFooter className="flex flex-col gap-2">
               <Button 
-                className="w-full" 
+                className="w-full rounded-3xl" 
                 onClick={handleGoToCheckout}
               >
-                Μετάβαση στο Checkout
+                Μετάβαση για Ολοκλήρωση
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full"
+                className="w-full rounded-3xl hover:bg-primary/90"
                 onClick={() => navigate('/products')}
               >
-                Συνέχεια Αγορών
+                Επιστροφή για Συνέχεια Αγορών
               </Button>
             </CardFooter>
           </Card>

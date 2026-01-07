@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronRight } from 'lucide-react';
 
 interface Category {
   id: number;
@@ -28,6 +28,7 @@ export const CategoryManagement = () => {
     const { data, error } = await supabase
       .from('categories')
       .select('id,name,description,parent_id,parent:parent_id(id,name)')
+      .order('parent_id', { ascending: true, nullsFirst: true })
       .order('name', { ascending: true });
 
     if (error) {
@@ -125,7 +126,7 @@ export const CategoryManagement = () => {
     categories.filter(c => c.id !== currentId); // simple self-exclude
 
   return (
-    <Card>
+    <Card className="rounded-3xl">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Διαχείριση Κατηγοριών</CardTitle>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -140,34 +141,36 @@ export const CategoryManagement = () => {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>
-                {editingCategory ? 'Edit Category' : 'Add New Category'}
+                {editingCategory ? 'Επεξεργασία Κατηγορίας' : 'Καιρνούργια Κατηγορία'}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Όνομα</Label>
+              <div className="space-y-1">
+                <Label className="ml-2" htmlFor="name">Όνομα</Label>
                 <Input
                   id="name"
                   name="name"
                   required
+                  className="rounded-3xl"
                   defaultValue={editingCategory?.name || ''}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Περιγραφή</Label>
+              <div className="space-y-1">
+                <Label className="ml-2" htmlFor="description">Περιγραφή</Label>
                 <Textarea
                   id="description"
                   name="description"
+                  className="rounded-2xl"
                   defaultValue={editingCategory?.description || ''}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="parent_id">Προέλευση Κατηγορίας (προεραιτικό)</Label>
+              <div className="space-y-1">
+                <Label className="ml-2" htmlFor="parent_id">Προέλευση Κατηγορίας (προεραιτικό)</Label>
                 <select
                   id="parent_id"
                   name="parent_id"
                   defaultValue={editingCategory?.parent_id ?? ''}
-                  className="w-full border rounded-md h-10 px-3 text-sm bg-background"
+                  className="w-full border rounded-3xl h-10 px-3 text-sm bg-background"
                 >
                   <option value="">— None —</option>
                   {parentOptions(editingCategory?.id).map((c) => (
@@ -176,11 +179,11 @@ export const CategoryManagement = () => {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs ml-2 text-muted-foreground">
                   Αφήστε κενό για βασική κατηγορία. Επιλέξτε άλλη κατηγορία για να κάνετε αυτήν μια υποκατηγορία.
                 </p>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full rounded-3xl" disabled={loading}>
                 {loading ? 'Saving...' : editingCategory ? 'Ενημέρωση' : 'Προσθήκη'}
               </Button>
             </form>
@@ -194,37 +197,68 @@ export const CategoryManagement = () => {
               <TableRow>
                 <TableHead>Όνομα</TableHead>
                 <TableHead>Περιγραφή</TableHead>
-                <TableHead>Προέλευση</TableHead>
                 <TableHead>Ενέργειες</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {categories.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell>{category.description || 'Χωρίς περιγραφή'}</TableCell>
-                  <TableCell>{category.parent?.name ?? '—'}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(category)}
-                        className="rounded-full hover:bg-primary"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(category.id)}
-                        className="text-destructive hover:bg-red-400 rounded-full hover:text-white"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+              {categories.filter(c => !c.parent_id).map((parentCategory) => (
+                <>
+                  <TableRow key={parentCategory.id}>
+                    <TableCell className="font-semibold">{parentCategory.name}</TableCell>
+                    <TableCell>{parentCategory.description || 'Χωρίς περιγραφή'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(parentCategory)}
+                          className="rounded-full hover:bg-primary"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(parentCategory.id)}
+                          className="text-destructive hover:bg-red-400 rounded-full hover:text-white"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {categories.filter(c => c.parent_id === parentCategory.id).map((subCategory) => (
+                    <TableRow key={subCategory.id} className="bg-muted/30">
+                      <TableCell className="text-muted-foreground">
+                        <div className="flex items-center gap-1 pl-6">
+                          <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                          <span>{subCategory.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{subCategory.description || 'Χωρίς περιγραφή'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(subCategory)}
+                            className="rounded-full hover:bg-primary"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(subCategory.id)}
+                            className="text-destructive hover:bg-red-400 rounded-full hover:text-white"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </>
               ))}
             </TableBody>
           </Table>

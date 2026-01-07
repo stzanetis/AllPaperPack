@@ -285,7 +285,7 @@ export const SiteSettingsManagement = () => {
   return (
     <div className="space-y-8">
       {/* Banner Text Settings */}
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <CardTitle>Κείμενο Banner</CardTitle>
           <CardDescription>
@@ -311,7 +311,7 @@ export const SiteSettingsManagement = () => {
       </Card>
 
       {/* Carousel Images */}
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Εικόνες Carousel</CardTitle>
@@ -331,21 +331,23 @@ export const SiteSettingsManagement = () => {
                 <DialogTitle>{editingImage ? 'Επεξεργασία Εικόνας' : 'Προσθήκη Εικόνας'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleAddImage} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Ανέβασμα Εικόνας</Label>
+                <div className="space-y-1">
+                  <Label className="ml-2">Ανέβασμα Εικόνας</Label>
                   <Input
                     type="file"
                     accept="image/*"
                     onChange={handleFileUpload}
+                    className="rounded-3xl"
                     disabled={uploading}
                   />
                   {uploading && <p className="text-sm text-muted-foreground">Ανέβασμα...</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="imageUrl">ή URL Εικόνας</Label>
+                <div className="space-y-1">
+                  <Label className="ml-2" htmlFor="imageUrl">ή URL Εικόνας</Label>
                   <Input
                     id="imageUrl"
                     value={newImageUrl}
+                    className="rounded-3xl"
                     onChange={(e) => setNewImageUrl(e.target.value)}
                     placeholder="https://example.com/image.jpg"
                   />
@@ -359,26 +361,28 @@ export const SiteSettingsManagement = () => {
                     />
                   </div>
                 )}
-                <div className="space-y-2">
-                  <Label htmlFor="altText">Εναλλακτικό Κείμενο (Alt Text)</Label>
+                <div className="space-y-1">
+                  <Label className="ml-2" htmlFor="altText">Εναλλακτικό Κείμενο (Alt Text)</Label>
                   <Input
                     id="altText"
                     value={newAltText}
+                    className="rounded-3xl"
                     onChange={(e) => setNewAltText(e.target.value)}
                     placeholder="Περιγραφή εικόνας"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="linkUrl">Σύνδεσμος (προαιρετικό)</Label>
+                <div className="space-y-1">
+                  <Label className="ml-2" htmlFor="linkUrl">Σύνδεσμος (προαιρετικό)</Label>
                   <Input
                     id="linkUrl"
+                    className="rounded-3xl"
                     value={newLinkUrl}
                     onChange={(e) => setNewLinkUrl(e.target.value)}
                     placeholder="/products ή https://example.com"
                   />
-                  <p className="text-xs text-muted-foreground">Αν οριστεί, η εικόνα θα είναι κλικ και θα ανοίγει αυτόν τον σύνδεσμο</p>
+                  <p className="text-xs text-muted-foreground ml-2">Αν οριστεί, η εικόνα θα είναι κλικ και θα ανοίγει αυτόν τον σύνδεσμο</p>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading || !newImageUrl}>
+                <Button type="submit" className="w-full rounded-3xl" disabled={loading || !newImageUrl}>
                   {editingImage ? 'Ενημέρωση' : 'Προσθήκη'}
                 </Button>
               </form>

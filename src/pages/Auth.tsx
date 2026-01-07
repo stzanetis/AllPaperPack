@@ -79,39 +79,41 @@ export default function Auth() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">
       <Tabs defaultValue="signin" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="signin">Σύνδεση</TabsTrigger>
-          <TabsTrigger value="signup">Εγγραφή</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 rounded-full">
+          <TabsTrigger className="rounded-full" value="signin">Σύνδεση</TabsTrigger>
+          <TabsTrigger className="rounded-full" value="signup">Εγγραφή</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="signin">
-          <Card>
+        <TabsContent className="mt-4" value="signin">
+          <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
             <CardHeader>
               <CardTitle>Σύνδεση</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                <div className="space-y-1">
+                  <Label className="ml-2" htmlFor="signin-email">Email</Label>
                   <Input
                     id="signin-email"
                     name="email"
                     type="email"
                     required
                     placeholder="your@email.com"
+                    className="rounded-full"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                <div className="space-y-1">
+                  <Label className="ml-2" htmlFor="signin-password">Password</Label>
                   <Input
                     id="signin-password"
                     name="password"
                     type="password"
                     required
                     placeholder="Your password"
+                    className="rounded-full"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full rounded-full" disabled={loading}>
                   {loading ? 'Signing In...' : 'Σύνδεση'}
                 </Button>
               </form>
@@ -119,57 +121,61 @@ export default function Auth() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="signup">
-          <Card>
+        <TabsContent className="mt-4" value="signup">
+          <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
             <CardHeader>
               <CardTitle>Εγγραφή</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Όνομα</Label>
+                  <div className="space-y-1">
+                    <Label className="ml-2" htmlFor="signup-name">Όνομα</Label>
                     <Input
                       id="signup-name"
                       name="name"
                       type="text"
                       required
                       placeholder="Όνομα"
+                      className="rounded-full"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-surname">Επώνυμο</Label>
+                  <div className="space-y-1">
+                    <Label className="ml-2" htmlFor="signup-surname">Επώνυμο</Label>
                     <Input
                       id="signup-surname"
                       name="surname"
                       type="text"
                       required
                       placeholder="Επώνυμο"
+                      className="rounded-full"
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                <div className="space-y-1">
+                  <Label className="ml-2" htmlFor="signup-email">Email</Label>
                   <Input
                     id="signup-email"
                     name="email"
                     type="email"
                     required
                     placeholder="your@email.com"
+                    className="rounded-full"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Κωδικός</Label>
+                <div className="space-y-1">
+                  <Label className="ml-2" htmlFor="signup-password">Κωδικός</Label>
                   <Input
                     id="signup-password"
                     name="password"
                     type="password"
                     required
                     placeholder="Choose a password"
-                    minLength={6}
+                    minLength={8}
+                    className="rounded-full"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full rounded-full" disabled={loading}>
                   {loading ? 'Creating Account...' : 'Εγγραφή'}
                 </Button>
               </form>

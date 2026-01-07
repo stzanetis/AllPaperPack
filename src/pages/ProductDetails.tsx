@@ -123,13 +123,26 @@ export default function ProductDetails() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-10 grid gap-8 md:grid-cols-2">
-        <Skeleton className="aspect-square w-full" />
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-10 w-40" />
+      <div className="container mx-auto px-4 py-10">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+          <div className="lg:col-span-2 aspect-square max-w-md mx-auto w-full">
+            <Skeleton className="h-full w-full rounded-lg" />
+          </div>
+          <div className="lg:col-span-3 space-y-6">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-8 w-3/4" />
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-6 w-16" />
+            </div>
+            <Skeleton className="h-10 w-full max-w-sm" />
+            <Skeleton className="h-24 w-full max-w-md" />
+            <Skeleton className="h-6 w-24" />
+            <div className="flex gap-4">
+              <Skeleton className="h-11 w-60" />
+              <Skeleton className="h-11 w-40" />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -205,7 +218,8 @@ export default function ProductDetails() {
 
           {/* Variant Selection */}
           {product.variants.length > 1 && (
-            <div className="mb-4">
+            <div className="mb-6">
+              <label className="text-sm font-medium mb-2 block">Επιλέξτε είδος</label>
               <Select
                 value={selectedVariantId?.toString() || ''}
                 onValueChange={(value) => {
@@ -213,7 +227,7 @@ export default function ProductDetails() {
                   setQty(1);
                 }}
               >
-                <SelectTrigger className="w-full md:w-64 rounded-full">
+                <SelectTrigger className="w-full max-w-sm rounded-3xl">
                   <SelectValue placeholder="Επιλέξτε είδος" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
@@ -233,44 +247,54 @@ export default function ProductDetails() {
             </div>
           )}
 
-          {product.variants.length === 1 && (
-            <div className="mb-4">
-              <Badge variant="outline" className="text-sm">
-                {product.variants[0].variant_name}
-              </Badge>
+          {/* Price and Purchase Section */}
+          <div className="mb-6">
+            {/* Price Display */}
+            <div className="p-4 bg-gray-50 rounded-3xl border border-gray-200 max-w-md">
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground uppercase tracking-wide">Χοντρική</p>
+                  <p className="text-3xl font-bold text-primary">{price.toFixed(2)}€</p>
+                </div>
+                <div className="h-12 w-px bg-gray-300" aria-hidden="true" />
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground uppercase tracking-wide">Με ΦΠΑ</p>
+                  <p className="text-3xl font-bold text-gray-700">
+                    {(price + (price * product.vat * 0.01)).toFixed(2)}€
+                  </p>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
 
-          {/* Price + Quantity */}
-          <div className="my-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-64 h-16 bg-gray-100/70 rounded-full border flex items-center px-4">
-              <span className="flex-1 text-center">
-                <h1 className="text-2xl text-primary font-bold">{price.toFixed(2)}€</h1>
-                <p className="text-sm">ΧΟΝΤΡΙΚΗ</p>
-              </span>
-              <div className="h-10 border-l border-gray-300 ml-4 mr-3" aria-hidden="true" />
-              <span className="flex-1 text-center">
-                <h1 className="text-xl text-gray-700 font-bold">
-                  {(price + (price * product.vat * 0.01)).toFixed(2)}€
-                </h1>
-                <p className="text-sm">ΜΕ ΦΠΑ</p>
-              </span>
-            </div>
+          {/* Quantity and Add to Cart */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+            {/* Add to Cart Button */}
+            <Button
+              onClick={handleAdd}
+              disabled={stock === 0 || adding || !selectedVariant}
+              size="lg"
+              className="w-full sm:w-auto sm:min-w-[240px] rounded-3xl"
+            >
+              {adding ? 'Προσθήκη…' : 'Προσθήκη στο Καλάθι'}
+            </Button>
 
-            <div className="flex items-center ml-0 sm:ml-20 gap-2">
+            {/* Quantity Controls */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium whitespace-nowrap">Ποσότητα:</label>
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
                 disabled={qty <= 1}
-                className="bg-primary text-white rounded-full"
+                className="h-9 w-9 rounded-full"
               >
                 −
               </Button>
               <Input
                 type="number"
-                className="w-24 rounded-full text-center"
+                className="w-20 h-9 rounded-full text-center"
                 value={qty}
                 min={1}
                 max={stock || undefined}
@@ -286,27 +310,27 @@ export default function ProductDetails() {
                 size="icon"
                 onClick={() => setQty((q) => Math.min(stock || q + 1, q + 1))}
                 disabled={stock > 0 ? qty >= stock : false}
-                className="bg-primary text-white rounded-full"
+                className="h-9 w-9 rounded-full"
               >
                 +
               </Button>
-              <Badge className="h-10" variant={stock > 0 ? 'default' : 'destructive'}>
-                {stock > 0 ? `${stock} σε απόθεμα` : 'Χωρίς απόθεμα'}
-              </Badge>
             </div>
+
+            {/* Stock Badge */}
+            <Badge variant={stock > 0 ? 'default' : 'destructive'} className="px-3 py-1">
+              {stock > 0 ? `${stock} σε απόθεμα` : 'Χωρίς απόθεμα'}
+            </Badge>
           </div>
 
-          <Button
-            onClick={handleAdd}
-            disabled={stock === 0 || adding || !selectedVariant}
-            className="w-full text-md rounded-full"
-          >
-            {adding ? 'Προσθήκη…' : 'Προσθήκη στο Καλάθι'}
-          </Button>
-
-          <p className="text-muted-foreground my-8 whitespace-pre-line">
-            {product.description}
-          </p>
+          {/* Description */}
+          {product.description && (
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="text-lg font-semibold mb-3">Περιγραφή</h3>
+              <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
+                {product.description}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

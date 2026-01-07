@@ -30,12 +30,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     : null;
 
   const price = cheapestVariant?.price || 0;
-  const hasStock = inStockVariants.length > 0;
-  const hasMultipleVariants = product.variants.length > 1;
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardContent className="p-4 flex-1 flex flex-col">
+    <Card className="h-full flex flex-col rounded-3xl ">
+      <CardContent className="p-2 flex-1 flex flex-col">
         <Link to={`/products/${product.id}`}>
           <div className="aspect-square mb-4 overflow-hidden rounded-md bg-muted">
             <img
@@ -45,7 +43,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             />
           </div>
 
-          <h3 className="font-semibold text-base md:text-lg mb-2 line-clamp-3 md:line-clamp-none">
+          <h3 className="font-semibold text-base md:text-lg mb-2 line-clamp-2">
             {product.name}
           </h3>
 
@@ -55,20 +53,25 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         </Link>
 
         {/* Price section pinned to bottom of CardContent */}
-        <div className="mt-auto flex items-center md:gap-2 bg-gray-100 py-1 px-3 rounded-md">
-          <span className="font-bold text-xl md:text-3xl text-primary mr-2">
-            {price.toFixed(2)}€
-          </span>
-          <div className="h-8 border-l border-gray-300 mr-2" aria-hidden="true" />
-          <span className="font-bold text-xs md:text-sm text-gray-700">
-            <span className="md:text-sm block">Με ΦΠΑ:</span>
-            {(price + (price * product.vat * 0.01)).toFixed(2)}€
-          </span>
+        <div className="mt-auto flex items-center md:gap-2 bg-gray-100 py-1 px-3 rounded-b-2xl">
+          <div className="flex-1 text-center">
+            <span className="font-bold text-2xl md:text-3xl text-primary block">
+              {price.toFixed(2)}€
+            </span>
+          </div>
+          <div className="w-px h-10 bg-gray-300" aria-hidden="true" />
+          <div className="flex-1 text-center">
+            <span className="text-xs font-semibold md:text-sm text-gray-600 block">Με ΦΠΑ:</span>
+            <span className="font-bold text-lg md:text-xl text-gray-800">
+              {(price + (price * product.vat * 0.01)).toFixed(2)}€
+            </span>
+          </div>
         </div>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
+
+      {/*<CardFooter className="p-4 pt-0">
         <Button 
-          className="w-full" 
+          className="w-full rounded-3xl" 
           asChild
           disabled={!hasStock}
         >
@@ -79,7 +82,8 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             </span>
           </Link>
         </Button>
-      </CardFooter>
+      </CardFooter>*/}
+
     </Card>
   );
 };

@@ -88,7 +88,7 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
+        <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Προϊόντα</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
@@ -99,7 +99,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Παραγγελίες</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Πελάτες</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ετικέτες</CardTitle>
             <Tag className="h-4 w-4 text-muted-foreground" />

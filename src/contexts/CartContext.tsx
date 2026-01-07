@@ -155,43 +155,59 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    const { error } = await supabase
+    // Optimistic update - update UI immediately
+    setItems(prevItems => 
+      prevItems.map(item => 
+        item.variant_id === variantId 
+          ? { ...item, quantity } 
+          : item
+      )
+    );
+
+    // Update database in background
+    supabase
       .from('cart')
       .update({ quantity })
       .eq('profile_id', user.id)
-      .eq('variant_id', variantId);
-
-    if (error) {
-      console.error('Error updating quantity:', error);
-      toast({
-        title: "Σφάλμα",
-        description: "Αποτυχία ενημέρωσης ποσότητας",
-        variant: "destructive",
+      .eq('variant_id', variantId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Error updating quantity:', error);
+          // Revert on error
+          fetchCartItems();
+          toast({
+            title: "Σφάλμα",
+            description: "Αποτυχία ενημέρωσης ποσότητας",
+            variant: "destructive",
+          });
+        }
       });
-    } else {
-      await fetchCartItems();
-    }
   };
 
   const removeFromCart = async (variantId: number) => {
     if (!user) return;
 
-    const { error } = await supabase
+    // Optimistic update - remove from UI immediately
+    setItems(prevItems => prevItems.filter(item => item.variant_id !== variantId));
+
+    // Delete from database in background
+    supabase
       .from('cart')
       .delete()
       .eq('profile_id', user.id)
-      .eq('variant_id', variantId);
-
-    if (error) {
-      console.error('Error removing from cart:', error);
-      toast({
-        title: "Σφάλμα",
-        description: "Αποτυχία αφαίρεσης προϊόντος",
-        variant: "destructive",
+      .eq('variant_id', variantId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Error removing from cart:', error);
+          // Revert on error
+          fetchCartItems();
+          toast({
+            title: "Σφάλμα",
+            description: "Αποτυχία αφαίρεσης προϊόντος",
+            variant: "destructive",
+          });
+        }
       });
-    } else {
-      await fetchCartItems();
-    }
   };
 
   const clearCart = async () => {

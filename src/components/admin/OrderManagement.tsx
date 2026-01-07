@@ -153,7 +153,7 @@ export const OrderManagement = () => {
   };
 
   return (
-    <Card>
+    <Card className="rounded-3xl">
       <CardHeader>
         <CardTitle>Διαχείριση Παραγγελιών</CardTitle>
         <CardDescription>Δείτε και διαχειριστείτε όλες τις παραγγελίες</CardDescription>
@@ -174,7 +174,7 @@ export const OrderManagement = () => {
                 : null;
 
               return (
-                <div key={order.id} className="border rounded-lg overflow-hidden">
+                <div key={order.id} className="border rounded-3xl overflow-hidden">
                   {/* Order Header */}
                   <button
                     onClick={() => toggleOrderExpanded(order.id)}
@@ -238,14 +238,14 @@ export const OrderManagement = () => {
                               onValueChange={(value) => updateOrderStatus(order.id, value as 'submitted' | 'confirmed' | 'completed' | 'cancelled')}
                               disabled={loading}
                             >
-                              <SelectTrigger className="w-40">
+                              <SelectTrigger className="w-40 -ml-2 rounded-3xl">
                                 <SelectValue />
                               </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="submitted">Υποβλήθηκε</SelectItem>
-                                <SelectItem value="confirmed">Επιβεβαιώθηκε</SelectItem>
-                                <SelectItem value="completed">Ολοκληρώθηκε</SelectItem>
-                                <SelectItem value="cancelled">Ακυρώθηκε</SelectItem>
+                              <SelectContent className="rounded-2xl">
+                                <SelectItem className="rounded-xl" value="submitted">Υποβλήθηκε</SelectItem>
+                                <SelectItem className="rounded-xl" value="confirmed">Επιβεβαιώθηκε</SelectItem>
+                                <SelectItem className="rounded-xl" value="completed">Ολοκληρώθηκε</SelectItem>
+                                <SelectItem className="rounded-xl" value="cancelled">Ακυρώθηκε</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>

@@ -30,9 +30,15 @@ interface Category {
   parent_id: number | null;
 }
 
+interface Tag {
+  id: number;
+  name: string;
+}
+
 export default function Products() {
   const [products, setProducts] = useState<ProductBase[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -40,10 +46,11 @@ export default function Products() {
   // Category filtering - parent and subcategory
   const initialParentCategory = searchParams.get('category') || 'all';
   const initialSubCategory = searchParams.get('subcategory') || 'all';
-  const initialTag = searchParams.get('tag') || '';
+  const initialTag = searchParams.get('tag') || 'all';
   
   const [selectedParentCategory, setSelectedParentCategory] = useState<string>(initialParentCategory);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>(initialSubCategory);
+  const [selectedTag, setSelectedTag] = useState<string>(initialTag);
 
   // Derived category lists
   const parentCategories = categories.filter((c) => c.parent_id === null);
@@ -55,8 +62,10 @@ export default function Products() {
   useEffect(() => {
     const urlParent = searchParams.get('category') || 'all';
     const urlSub = searchParams.get('subcategory') || 'all';
+    const urlTag = searchParams.get('tag') || 'all';
     setSelectedParentCategory(urlParent);
     setSelectedSubCategory(urlSub);
+    setSelectedTag(urlTag);
   }, [searchParams]);
 
   // Reset subcategory when parent changes
@@ -108,14 +117,13 @@ export default function Products() {
     }
 
     // If filtering by tag
-    const tagId = searchParams.get('tag');
     let baseIdsFromTag: number[] | null = null;
     
-    if (tagId) {
+    if (selectedTag !== 'all') {
       const { data: tagProducts } = await supabase
         .from('product_has_tags')
         .select('base_id')
-        .eq('tag_id', parseInt(tagId));
+        .eq('tag_id', parseInt(selectedTag));
       
       baseIdsFromTag = (tagProducts || []).map(tp => tp.base_id);
       if (baseIdsFromTag.length === 0) {
@@ -167,9 +175,23 @@ export default function Products() {
     }
   };
 
-  // Fetch categories once
+  const fetchTags = async () => {
+    const { data, error } = await supabase
+      .from('tags')
+      .select('id, name')
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching tags:', error);
+    } else {
+      setTags(data || []);
+    }
+  };
+
+  // Fetch categories and tags once
   useEffect(() => {
     fetchCategories();
+    fetchTags();
   }, []);
 
   // Fetch products whenever selected categories or tag changes
@@ -177,9 +199,9 @@ export default function Products() {
     if (categories.length > 0) {
       fetchProducts();
     }
-  }, [selectedParentCategory, selectedSubCategory, categories, searchParams.get('tag')]);
+  }, [selectedParentCategory, selectedSubCategory, selectedTag, categories]);
 
-  const updateURLParams = (parent: string, sub: string) => {
+  const updateURLParams = (parent: string, sub: string, tag: string) => {
     const params = new URLSearchParams(searchParams);
     if (parent === 'all') {
       params.delete('category');
@@ -192,18 +214,28 @@ export default function Products() {
         params.set('subcategory', sub);
       }
     }
+    if (tag === 'all') {
+      params.delete('tag');
+    } else {
+      params.set('tag', tag);
+    }
     setSearchParams(params);
   };
 
   const handleParentCategoryChange = (value: string) => {
     setSelectedParentCategory(value);
     setSelectedSubCategory('all');
-    updateURLParams(value, 'all');
+    updateURLParams(value, 'all', selectedTag);
   };
 
   const handleSubCategoryChange = (value: string) => {
     setSelectedSubCategory(value);
-    updateURLParams(selectedParentCategory, value);
+    updateURLParams(selectedParentCategory, value, selectedTag);
+  };
+
+  const handleTagChange = (value: string) => {
+    setSelectedTag(value);
+    updateURLParams(selectedParentCategory, selectedSubCategory, value);
   };
 
   const filteredProducts = products.filter(product =>
@@ -215,7 +247,7 @@ export default function Products() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-2 mb-6">
           <div className="flex-1">
             <Input
               placeholder="Αναζήτηση προϊόντων..."
@@ -234,11 +266,11 @@ export default function Products() {
               <SelectTrigger className="rounded-full">
                 <SelectValue placeholder="Κατηγορία" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl">
-                <SelectItem className="rounded-xl" value="all">Όλες οι Κατηγορίες</SelectItem>
+              <SelectContent className="rounded-2xl bg-white">
+                <SelectItem className="rounded-xl hover:bg-primary focus:bg-primary" value="all">Όλες οι Κατηγορίες</SelectItem>
                 {parentCategories.map((category) => (
-                  <SelectItem className="rounded-xl" key={category.id} value={category.id.toString()}>
-                    {category.name}
+                  <SelectItem className="rounded-xl hover:bg-primary focus:bg-primary" key={category.id} value={category.id.toString()}>
+                  {category.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -252,13 +284,13 @@ export default function Products() {
                 value={selectedSubCategory}
                 onValueChange={handleSubCategoryChange}
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-full">
                   <SelectValue placeholder="Υποκατηγορία" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Όλες οι Υποκατηγορίες</SelectItem>
+                <SelectContent className="rounded-2xl bg-white">
+                  <SelectItem className="rounded-xl hover:bg-primary focus:bg-primary" value="all">Όλες οι Υποκατηγορίες</SelectItem>
                   {subCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
+                    <SelectItem className="rounded-xl hover:bg-primary focus:bg-primary" key={category.id} value={category.id.toString()}>
                       {category.name}
                     </SelectItem>
                   ))}
@@ -266,11 +298,31 @@ export default function Products() {
               </Select>
             </div>
           )}
+
+          {/* Tags Dropdown */}
+          <div className="md:w-48">
+            <Select
+              value={selectedTag}
+              onValueChange={handleTagChange}
+            >
+              <SelectTrigger className="rounded-full">
+                <SelectValue placeholder="Προτεινόμενα" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl bg-white">
+                <SelectItem className="rounded-xl hover:bg-primary focus:bg-primary" value="all">Όλα τα Προτεινόμενα</SelectItem>
+                {tags.map((tag) => (
+                  <SelectItem className="rounded-xl hover:bg-primary focus:bg-primary" key={tag.id} value={tag.id.toString()}>
+                    {tag.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="space-y-4">
               <Skeleton className="aspect-square" />
@@ -284,7 +336,7 @@ export default function Products() {
           <p className="text-muted-foreground">Δεν βρέθηκαν προϊόντα με αυτά τα κριτήρια.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
