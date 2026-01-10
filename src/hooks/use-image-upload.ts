@@ -47,7 +47,7 @@ export function useImageUpload() {
       formData.append('image', file);
 
       // Update this URL to your actual server upload endpoint
-      const uploadUrl = 'https://yourdomain.com/upload.php';
+      const uploadUrl = 'https://allpaperpack.gr/upload.php';
 
       const xhr = new XMLHttpRequest();
 

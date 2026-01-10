@@ -35,7 +35,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     <Card className="h-full flex flex-col rounded-3xl ">
       <CardContent className="p-2 flex-1 flex flex-col">
         <Link to={`/products/${product.id}`}>
-          <div className="aspect-square mb-4 overflow-hidden rounded-md bg-muted">
+          <div className="aspect-square mb-4 overflow-hidden rounded-2xl bg-muted">
             <img
               src={product.image_path || '/placeholder.svg'}
               alt={product.name}

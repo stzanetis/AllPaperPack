@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import { Plus, Edit, Trash2, ChevronDown, ChevronUp, Package, ChevronRight } from 'lucide-react';
+import { ImageUpload } from '@/components/ImageUpload.tsx';
 
 interface ProductVariant {
   id: number;
@@ -60,6 +61,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
   const [selectedProductForVariant, setSelectedProductForVariant] = useState<ProductBase | null>(null);
   const [expandedProducts, setExpandedProducts] = useState<Set<number>>(new Set());
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const fetchProducts = async () => {
     // Fetch product bases with category
@@ -425,14 +427,13 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="ml-2" htmlFor="image_path">URL Εικόνας</Label>
-                <Input
-                  id="image_path"
-                  name="image_path"
-                  type="url"
-                  className="rounded-3xl"
-                  defaultValue={editingProduct?.image_path || ''}
+                <ImageUpload
+                  label="Εικόνα Προϊόντος"
+                  currentImage={editingProduct?.image_path || imageUrl}
+                  onUploadComplete={(url) => setImageUrl(url)}
+                  onRemove={() => setImageUrl(null)}
                 />
+                <input type="hidden" name="image_path" value={imageUrl || editingProduct?.image_path || ''} />
               </div>
               <div className="space-y-2">
                 <Label className="ml-2" >Ετικέτες</Label>

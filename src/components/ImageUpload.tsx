@@ -59,8 +59,8 @@ export function ImageUpload({
   };
 
   return (
-    <div className={`space-y-3 ${className}`}>
-      <label className="text-sm font-medium">{label}</label>
+    <div className={`space-y-1 ${className}`}>
+      <label className="text-sm font-medium ml-2">{label}</label>
       
       <div className="flex flex-col gap-3">
         {preview ? (
@@ -68,9 +68,9 @@ export function ImageUpload({
             <img
               src={preview}
               alt="Preview"
-              className="w-full h-48 object-cover rounded-lg border"
+              className="w-full h-48 object-cover rounded-3xl border"
             />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl flex items-center justify-center gap-2">
               <Button
                 type="button"
                 variant="secondary"
@@ -96,7 +96,7 @@ export function ImageUpload({
         ) : (
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+            className="border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer hover:border-primary transition-colors"
           >
             <ImageIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mb-2">
