@@ -217,8 +217,7 @@ const Index = () => {
             </>
           ) : (
             <img
-              src="/hero.jpg"
-              alt="AllPaperPack hero"
+              src="/hero.png"
               className="w-full aspect-[28/9] object-cover rounded-lg"
             />
           )}
