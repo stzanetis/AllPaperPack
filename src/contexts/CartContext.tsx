@@ -4,24 +4,31 @@ import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/use-toast';
 
 interface CartItem {
-  id: string;
-  product_id: string;
+  variant_id: number;
   quantity: number;
-  product: {
-    name: string;
+  variant: {
+    id: number;
+    variant_name: string;
     price: number;
-    image_url: string;
     stock: number;
+    base: {
+      id: number;
+      name: string;
+      image_path: string | null;
+      vat: number;
+    };
   };
 }
 
 interface CartContextType {
   items: CartItem[];
   loading: boolean;
-  addToCart: (productId: string, quantity: number) => Promise<void>;
-  updateQuantity: (productId: string, quantity: number) => Promise<void>;
-  removeFromCart: (productId: string) => Promise<void>;
+  addToCart: (variantId: number, quantity: number) => Promise<void>;
+  updateQuantity: (variantId: number, quantity: number) => Promise<void>;
+  removeFromCart: (variantId: number) => Promise<void>;
   clearCart: () => Promise<void>;
+  subtotal: number;
+  vatAmount: number;
   total: number;
   itemCount: number;
 }
@@ -41,29 +48,34 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
     setLoading(true);
     const { data, error } = await supabase
-      .from('cart_items')
+      .from('cart')
       .select(`
-        id,
-        product_id,
+        variant_id,
         quantity,
-        product:products (
-          name,
+        variant:variant_id (
+          id,
+          variant_name,
           price,
-          image_url,
-          stock
+          stock,
+          base:base_id (
+            id,
+            name,
+            image_path,
+            vat
+          )
         )
       `)
-      .eq('user_id', user.id);
+      .eq('profile_id', user.id);
 
     if (error) {
       console.error('Error fetching cart items:', error);
       toast({
-        title: "Error",
-        description: "Failed to load cart items",
+        title: "Σφάλμα",
+        description: "Αποτυχία φόρτωσης καλαθιού",
         variant: "destructive",
       });
     } else {
-      setItems(data || []);
+      setItems((data as unknown as CartItem[]) || []);
     }
     setLoading(false);
   };
@@ -72,100 +84,145 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     fetchCartItems();
   }, [user]);
 
-  const addToCart = async (productId: string, quantity: number) => {
+  const addToCart = async (variantId: number, quantity: number) => {
     if (!user) {
       toast({
-        title: "Sign in required",
-        description: "Please sign in to add items to cart",
+        title: "Απαιτείται σύνδεση",
+        description: "Συνδεθείτε για να προσθέσετε προϊόντα στο καλάθι",
         variant: "destructive",
       });
       return;
     }
 
-    const { error } = await supabase
-      .from('cart_items')
-      .upsert({
-        user_id: user.id,
-        product_id: productId,
-        quantity,
-      });
+    // Check if item already exists in cart
+    const existingItem = items.find(item => item.variant_id === variantId);
+    
+    if (existingItem) {
+      // Update quantity
+      const newQuantity = existingItem.quantity + quantity;
+      const { error } = await supabase
+        .from('cart')
+        .update({ quantity: newQuantity })
+        .eq('profile_id', user.id)
+        .eq('variant_id', variantId);
 
-    if (error) {
-      console.error('Error adding to cart:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add item to cart",
-        variant: "destructive",
-      });
+      if (error) {
+        console.error('Error updating cart:', error);
+        toast({
+          title: "Σφάλμα",
+          description: "Αποτυχία ενημέρωσης καλαθιού",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Ενημερώθηκε",
+          description: "Η ποσότητα ενημερώθηκε",
+        });
+        await fetchCartItems();
+      }
     } else {
-      toast({
-        title: "Added to cart",
-        description: "Item added successfully",
-      });
-      await fetchCartItems();
+      // Insert new item
+      const { error } = await supabase
+        .from('cart')
+        .insert({
+          profile_id: user.id,
+          variant_id: variantId,
+          quantity,
+        });
+
+      if (error) {
+        console.error('Error adding to cart:', error);
+        toast({
+          title: "Σφάλμα",
+          description: "Αποτυχία προσθήκης στο καλάθι",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Προστέθηκε",
+          description: "Το προϊόν προστέθηκε στο καλάθι",
+        });
+        await fetchCartItems();
+      }
     }
   };
 
-  const updateQuantity = async (productId: string, quantity: number) => {
+  const updateQuantity = async (variantId: number, quantity: number) => {
     if (!user) return;
 
     if (quantity <= 0) {
-      await removeFromCart(productId);
+      await removeFromCart(variantId);
       return;
     }
 
-    const { error } = await supabase
-      .from('cart_items')
-      .update({ quantity })
-      .eq('user_id', user.id)
-      .eq('product_id', productId);
+    // Optimistic update - update UI immediately
+    setItems(prevItems => 
+      prevItems.map(item => 
+        item.variant_id === variantId 
+          ? { ...item, quantity } 
+          : item
+      )
+    );
 
-    if (error) {
-      console.error('Error updating quantity:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update quantity",
-        variant: "destructive",
+    // Update database in background
+    supabase
+      .from('cart')
+      .update({ quantity })
+      .eq('profile_id', user.id)
+      .eq('variant_id', variantId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Error updating quantity:', error);
+          // Revert on error
+          fetchCartItems();
+          toast({
+            title: "Σφάλμα",
+            description: "Αποτυχία ενημέρωσης ποσότητας",
+            variant: "destructive",
+          });
+        }
       });
-    } else {
-      await fetchCartItems();
-    }
   };
 
-  const removeFromCart = async (productId: string) => {
+  const removeFromCart = async (variantId: number) => {
     if (!user) return;
 
-    const { error } = await supabase
-      .from('cart_items')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('product_id', productId);
+    // Optimistic update - remove from UI immediately
+    setItems(prevItems => prevItems.filter(item => item.variant_id !== variantId));
 
-    if (error) {
-      console.error('Error removing from cart:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove item",
-        variant: "destructive",
+    // Delete from database in background
+    supabase
+      .from('cart')
+      .delete()
+      .eq('profile_id', user.id)
+      .eq('variant_id', variantId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Error removing from cart:', error);
+          // Revert on error
+          fetchCartItems();
+          toast({
+            title: "Σφάλμα",
+            description: "Αποτυχία αφαίρεσης προϊόντος",
+            variant: "destructive",
+          });
+        }
       });
-    } else {
-      await fetchCartItems();
-    }
   };
 
   const clearCart = async () => {
     if (!user) return;
 
     const { error } = await supabase
-      .from('cart_items')
+      .from('cart')
       .delete()
-      .eq('user_id', user.id);
+      .eq('profile_id', user.id);
 
     if (error) {
       console.error('Error clearing cart:', error);
       toast({
-        title: "Error",
-        description: "Failed to clear cart",
+        title: "Σφάλμα",
+        description: "Αποτυχία εκκαθάρισης καλαθιού",
         variant: "destructive",
       });
     } else {
@@ -173,7 +230,18 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const total = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  // Calculate subtotal (without VAT)
+  const subtotal = items.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0);
+  
+  // Calculate total VAT amount
+  const vatAmount = items.reduce((sum, item) => {
+    const itemPrice = item.variant.price * item.quantity;
+    const itemVat = itemPrice * (item.variant.base.vat / 100);
+    return sum + itemVat;
+  }, 0);
+  
+  // Total including VAT
+  const total = subtotal + vatAmount;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -184,6 +252,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       updateQuantity,
       removeFromCart,
       clearCart,
+      subtotal,
+      vatAmount,
       total,
       itemCount,
     }}>
