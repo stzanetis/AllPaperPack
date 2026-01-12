@@ -157,7 +157,8 @@ CREATE TABLE public.product_variants (
 
     variant_name TEXT NOT NULL,
     price NUMERIC(10,2) NOT NULL,
-    stock INTEGER NOT NULL DEFAULT 0
+    stock INTEGER NOT NULL DEFAULT 0,
+    sku TEXT
 );
 
 CREATE INDEX idx_product_variants_base ON public.product_variants(base_id);

@@ -17,6 +17,7 @@ interface OrderItem {
   vat: number;
   variant: {
     variant_name: string;
+    sku: string | null;
     base: {
       name: string;
       image_path: string | null;
@@ -93,6 +94,7 @@ export default function Account() {
             vat,
             variant:product_variants (
               variant_name,
+              sku,
               base:product_bases (
                 name,
                 image_path
@@ -411,6 +413,7 @@ export default function Account() {
                                       <div className="font-medium truncate">{item.variant?.base?.name}</div>
                                       <div className="text-sm text-muted-foreground">
                                         {item.variant?.variant_name} × {item.quantity}
+                                        {item.variant?.sku && <span className="ml-2">( {item.variant.sku} )</span>}
                                       </div>
                                     </div>
                                     <div className="text-right">

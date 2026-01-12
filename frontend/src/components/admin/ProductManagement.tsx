@@ -19,6 +19,7 @@ interface ProductVariant {
   variant_name: string;
   price: number;
   stock: number;
+  sku: string | null;
 }
 
 interface Tag {
@@ -218,6 +219,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
       variant_name: formData.get('variant_name') as string,
       price: parseFloat(formData.get('price') as string),
       stock: parseInt(formData.get('stock') as string) || 0,
+      sku: formData.get('sku') as string || null,
     };
 
     let error;
@@ -509,6 +511,16 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                   defaultValue={editingVariant?.stock || 0}
                 />
               </div>
+              <div className="space-y-1">
+                <Label className="ml-2" htmlFor="sku">SKU</Label>
+                <Input
+                  id="sku"
+                  name="sku"
+                  placeholder="Κωδικός προϊόντος"
+                  className="rounded-3xl"
+                  defaultValue={editingVariant?.sku || ''}
+                />
+              </div>
               <Button type="submit" className="w-full rounded-3xl" disabled={loading}>
                 {loading ? 'Αποθήκευση...' : editingVariant ? 'Ενημέρωση' : 'Προσθήκη'}
               </Button>
@@ -615,6 +627,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                                   <TableHead>Όνομα</TableHead>
                                   <TableHead>Τιμή</TableHead>
                                   <TableHead>Απόθεμα</TableHead>
+                                  <TableHead>SKU</TableHead>
                                   <TableHead>Ενέργειες</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -628,6 +641,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                                         {variant.stock}
                                       </Badge>
                                     </TableCell>
+                                    <TableCell>{variant.sku || '-'}</TableCell>
                                     <TableCell>
                                       <div className="flex items-center gap-2">
                                         <Button

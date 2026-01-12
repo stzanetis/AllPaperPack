@@ -285,6 +285,9 @@ export const Header = () => {
               </>
             ) : (
               <div className="hidden md:flex items-center gap-2">
+                <span className="text-sm text-[#75796b] font-semibold mr-2">
+                  Συνδεθείτε για να προσθέσετε προϊόντα στο καλάθι σας
+                </span>
                 <Link to="/auth">
                   <Button className="rounded-full font-semibold">Σύνδεση</Button>
                 </Link>

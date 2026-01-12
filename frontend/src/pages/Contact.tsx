@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Mail } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 
 export default function Contact() {
   const [fullName, setFullName] = useState('');
@@ -39,14 +39,14 @@ export default function Contact() {
             <MapPin className="h-5 w-5 text-primary mt-1" />
             <div>
               <div className="font-medium">Διεύθυνση</div>
-              <div className="text-muted-foreground">Οδός Μπαφρας 20, Γιαννιτσά 58100</div>
+              <div className="text-muted-foreground">Οδός Μπάφρας 20, Γιαννιτσά 58100</div>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <Phone className="h-5 w-5 text-primary mt-1" />
             <div>
               <div className="font-medium">Τηλέφωνο</div>
-              <a className="text-muted-foreground hover:text-primary" href="tel:69996159627">69996159627</a>
+              <a className="text-muted-foreground hover:text-primary" href="tel:+306932030519">693 203 0519</a>
             </div>
           </div>
           <div className="flex items-start gap-3">

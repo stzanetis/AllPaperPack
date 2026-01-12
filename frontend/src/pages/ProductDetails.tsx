@@ -13,6 +13,7 @@ interface ProductVariant {
   variant_name: string;
   price: number;
   stock: number;
+  sku: string | null;
 }
 
 interface Tag {
@@ -126,21 +127,21 @@ export default function ProductDetails() {
       <div className="container mx-auto px-4 py-10">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2 aspect-square max-w-md mx-auto w-full">
-            <Skeleton className="h-full w-full rounded-lg" />
+            <Skeleton className="h-full w-full rounded-3xl" />
           </div>
           <div className="lg:col-span-3 space-y-6">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-4 w-32 rounded-3xl" />
+            <Skeleton className="h-8 w-3/4 rounded-3xl" />
             <div className="flex gap-2">
-              <Skeleton className="h-6 w-16" />
-              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-6 w-16 rounded-3xl" />
+              <Skeleton className="h-6 w-16 rounded-3xl" />
             </div>
-            <Skeleton className="h-10 w-full max-w-sm" />
-            <Skeleton className="h-24 w-full max-w-md" />
-            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-10 w-full max-w-md rounded-3xl" />
+            <Skeleton className="h-24 w-full max-w-md rounded-3xl" />
+            <Skeleton className="h-6 w-24 rounded-3xl" />
             <div className="flex gap-4">
-              <Skeleton className="h-11 w-60" />
-              <Skeleton className="h-11 w-40" />
+              <Skeleton className="h-11 w-60 rounded-3xl" />
+              <Skeleton className="h-11 w-40 rounded-3xl" />
             </div>
           </div>
         </div>
@@ -227,7 +228,7 @@ export default function ProductDetails() {
                   setQty(1);
                 }}
               >
-                <SelectTrigger className="w-full max-w-sm rounded-3xl">
+                <SelectTrigger className="w-full max-w-md rounded-3xl">
                   <SelectValue placeholder="Επιλέξτε είδος" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
@@ -265,6 +266,13 @@ export default function ProductDetails() {
                 </div>
               </div>
             </div>
+
+            {/* SKU Display */}
+            {selectedVariant?.sku && (
+              <div className="mt-2 ml-2 text-sm text-muted-foreground">
+                <span className="font-medium">SKU:</span> {selectedVariant.sku}
+              </div>
+            )}
           </div>
 
           {/* Quantity and Add to Cart */}
@@ -325,7 +333,7 @@ export default function ProductDetails() {
           {/* Description */}
           {product.description && (
             <div className="mt-6 pt-6 border-t">
-              <h3 className="text-lg font-semibold mb-3">Περιγραφή</h3>
+              <h3 className="text-xl font-semibold mb-3">Περιγραφή</h3>
               <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
                 {product.description}
               </p>

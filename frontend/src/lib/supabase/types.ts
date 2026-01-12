@@ -127,6 +127,7 @@ export type Database = {
           variant_name: string
           price: number
           stock: number
+          sku: string | null
         }
         Insert: {
           id?: number
@@ -134,6 +135,7 @@ export type Database = {
           variant_name: string
           price: number
           stock?: number
+          sku?: string | null
         }
         Update: {
           id?: number
@@ -141,6 +143,7 @@ export type Database = {
           variant_name?: string
           price?: number
           stock?: number
+          sku?: string | null
         }
         Relationships: [
           {

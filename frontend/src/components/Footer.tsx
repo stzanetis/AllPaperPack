@@ -31,7 +31,7 @@ export const Footer = () => {
           <h4 className="text-white mb-3 font-semibold">Επικοινωνία</h4>
           <ul className="space-y-2 text-sm text-white">
             <li>Email: <a className="text-white hover:text-[#FFD700]" href="mailto:info@allpaperpack.gr">info@allpaperpack.gr</a></li>
-            <li>Τηλ: <a className="text-white hover:text-[#FFD700]" href="tel:+306996159627">+30 699 615 9627</a></li>
+            <li>Τηλ: <a className="text-white hover:text-[#FFD700]" href="tel:+306932030519">+30 693 203 0519</a></li>
             <li>Facebook: <a className="text-white hover:text-[#FFD700]" href="https://www.facebook.com/dimitris.tzanetis">Dimitris Tzanetis</a></li>
           </ul>
         </div>
