@@ -30,5 +30,5 @@ package-lock.json
 # System files
 .directory
 TODO.md
-/.env
-setup
+.env
+/setup/old
