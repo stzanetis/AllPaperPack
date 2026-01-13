@@ -128,7 +128,8 @@ CREATE TABLE public.product_bases (
     image_path TEXT,
     vat INTEGER NOT NULL DEFAULT 24,
     category_id INTEGER NOT NULL
-        REFERENCES public.categories(id)
+        REFERENCES public.categories(id),
+    enabled BOOLEAN NOT NULL DEFAULT true
 );
 
 CREATE INDEX idx_product_bases_category ON public.product_bases(category_id);
@@ -158,7 +159,8 @@ CREATE TABLE public.product_variants (
     variant_name TEXT NOT NULL,
     price NUMERIC(10,2) NOT NULL,
     stock INTEGER NOT NULL DEFAULT 0,
-    sku TEXT
+    sku TEXT,
+    enabled BOOLEAN NOT NULL DEFAULT true
 );
 
 CREATE INDEX idx_product_variants_base ON public.product_variants(base_id);

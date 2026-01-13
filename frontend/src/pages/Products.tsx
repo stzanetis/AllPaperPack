@@ -11,6 +11,7 @@ interface ProductVariant {
   variant_name: string;
   price: number;
   stock: number;
+  enabled: boolean;
 }
 
 interface ProductBase {
@@ -19,6 +20,7 @@ interface ProductBase {
   description: string | null;
   image_path: string | null;
   vat: number;
+  enabled: boolean;
   category_id: number;
   categories: { name: string } | null;
   variants: ProductVariant[];
@@ -108,9 +110,11 @@ export default function Products() {
         description,
         image_path,
         vat,
+        enabled,
         category_id,
         categories:category_id (name)
-      `);
+      `)
+      .eq('enabled', true);
 
     if (categoryIds.length > 0) {
       query = query.in('category_id', categoryIds);
@@ -148,7 +152,8 @@ export default function Products() {
     const { data: variantsData } = await supabase
       .from('product_variants')
       .select('*')
-      .in('base_id', baseIds.length > 0 ? baseIds : [-1]);
+      .in('base_id', baseIds.length > 0 ? baseIds : [-1])
+      .eq('enabled', true);
 
 
     const productsWithVariants = (basesData || [])

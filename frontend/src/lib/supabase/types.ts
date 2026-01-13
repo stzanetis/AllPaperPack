@@ -93,6 +93,7 @@ export type Database = {
           image_path: string | null
           vat: number
           category_id: number
+          enabled: boolean
         }
         Insert: {
           id?: number
@@ -101,6 +102,7 @@ export type Database = {
           image_path?: string | null
           vat?: number
           category_id: number
+          enabled?: boolean
         }
         Update: {
           id?: number
@@ -109,6 +111,7 @@ export type Database = {
           image_path?: string | null
           vat?: number
           category_id?: number
+          enabled?: boolean
         }
         Relationships: [
           {
@@ -128,6 +131,7 @@ export type Database = {
           price: number
           stock: number
           sku: string | null
+          enabled: boolean
         }
         Insert: {
           id?: number
@@ -136,6 +140,7 @@ export type Database = {
           price: number
           stock?: number
           sku?: string | null
+          enabled?: boolean
         }
         Update: {
           id?: number
@@ -144,6 +149,7 @@ export type Database = {
           price?: number
           stock?: number
           sku?: string | null
+          enabled?: boolean
         }
         Relationships: [
           {

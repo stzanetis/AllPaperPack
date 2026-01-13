@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import { Plus, Edit, Trash2, ChevronDown, ChevronUp, Package, ChevronRight } from 'lucide-react';
 import { ImageUpload } from '@/components/ImageUpload.tsx';
+import { Switch } from '@/components/ui/switch';
 
 interface ProductVariant {
   id: number;
@@ -20,6 +21,7 @@ interface ProductVariant {
   price: number;
   stock: number;
   sku: string | null;
+  enabled: boolean;
 }
 
 interface Tag {
@@ -34,6 +36,7 @@ interface ProductBase {
   description: string | null;
   image_path: string | null;
   vat: number;
+  enabled: boolean;
   category_id: number;
   categories: { name: string } | null;
   variants?: ProductVariant[];
@@ -74,6 +77,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
         description,
         image_path,
         vat,
+        enabled,
         category_id,
         categories:category_id (name)
       `)
@@ -257,13 +261,11 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
     setLoading(false);
   };
 
-  const handleDeleteProduct = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this product and all its variants?')) return;
-
+  const toggleVariantEnabled = async (variantId: number, currentEnabled: boolean) => {
     const { error } = await supabase
-      .from('product_bases')
-      .delete()
-      .eq('id', id);
+      .from('product_variants')
+      .update({ enabled: !currentEnabled })
+      .eq('id', variantId);
 
     if (error) {
       toast({
@@ -274,13 +276,33 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
     } else {
       toast({
         title: "Success",
-        description: "Product deleted successfully",
+        description: `Variant ${!currentEnabled ? 'enabled' : 'disabled'} successfully`,
       });
       fetchProducts();
       onStatsUpdate();
     }
   };
+  const toggleProductEnabled = async (productId: number, currentEnabled: boolean) => {
+    const { error } = await supabase
+      .from('product_bases')
+      .update({ enabled: !currentEnabled })
+      .eq('id', productId);
 
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: `Product ${!currentEnabled ? 'enabled' : 'disabled'} successfully`,
+      });
+      fetchProducts();
+      onStatsUpdate();
+    }
+  };
   const handleDeleteVariant = async (id: number) => {
     if (!confirm('Are you sure you want to delete this variant?')) return;
 
@@ -299,6 +321,30 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
       toast({
         title: "Success",
         description: "Variant deleted successfully",
+      });
+      fetchProducts();
+      onStatsUpdate();
+    }
+  };
+
+  const handleDeleteProduct = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this product and all its variants?')) return;
+
+    const { error } = await supabase
+      .from('product_bases')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Product deleted successfully",
       });
       fetchProducts();
       onStatsUpdate();
@@ -403,10 +449,9 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl">
                     {categories.filter(c => !c.parent_id).map((parentCategory) => (
-                      <>
+                      <div key={parentCategory.id}>
                         <SelectItem 
                           className="rounded-xl font-semibold"
-                          key={parentCategory.id} 
                           value={parentCategory.id.toString()}
                         >
                           {parentCategory.name}
@@ -423,7 +468,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                             </span>
                           </SelectItem>
                         ))}
-                      </>
+                      </div>
                     ))}
                   </SelectContent>
                 </Select>
@@ -539,6 +584,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                 <TableHead>ΦΠΑ</TableHead>
                 <TableHead>Ετικέτες</TableHead>
                 <TableHead>Παραλλαγές</TableHead>
+                <TableHead className="w-20">Ενεργό</TableHead>
                 <TableHead>Ενέργειες</TableHead>
               </TableRow>
             </TableHeader>
@@ -587,6 +633,12 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                       {product.variants?.length || 0}
                     </TableCell>
                     <TableCell>
+                      <Switch
+                        checked={product.enabled}
+                        onCheckedChange={() => toggleProductEnabled(product.id, product.enabled)}
+                      />
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
@@ -617,7 +669,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                   </TableRow>
                   {expandedProducts.has(product.id) && (
                     <TableRow key={`${product.id}-variants`}>
-                      <TableCell colSpan={8} className="bg-muted/50 p-4">
+                      <TableCell colSpan={9} className="bg-muted/50 p-4">
                         <div className="ml-8">
                           <h4 className="font-medium mb-2">Παραλλαγές</h4>
                           {product.variants && product.variants.length > 0 ? (
@@ -628,6 +680,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                                   <TableHead>Τιμή</TableHead>
                                   <TableHead>Απόθεμα</TableHead>
                                   <TableHead>SKU</TableHead>
+                                  <TableHead className="w-20">Ενεργό</TableHead>
                                   <TableHead>Ενέργειες</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -642,6 +695,12 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                                       </Badge>
                                     </TableCell>
                                     <TableCell>{variant.sku || '-'}</TableCell>
+                                    <TableCell>
+                                      <Switch
+                                        checked={variant.enabled}
+                                        onCheckedChange={() => toggleVariantEnabled(variant.id, variant.enabled)}
+                                      />
+                                    </TableCell>
                                     <TableCell>
                                       <div className="flex items-center gap-2">
                                         <Button
