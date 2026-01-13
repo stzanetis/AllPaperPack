@@ -351,6 +351,9 @@ export const SiteSettingsManagement = () => {
                     onChange={(e) => setNewImageUrl(e.target.value)}
                     placeholder="https://example.com/image.jpg"
                   />
+                  <p className="text-xs text-muted-foreground ml-2">
+                    Συνιστώμενη αναλογία: 28:9 (π.χ. 1920×617 pixels)
+                  </p>
                 </div>
                 {newImageUrl && (
                   <div className="border rounded-md p-2">
