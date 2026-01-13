@@ -150,13 +150,13 @@ export default function Products() {
       .select('*')
       .in('base_id', baseIds.length > 0 ? baseIds : [-1]);
 
-    // Combine data - only include products that have at least one variant in stock
+
     const productsWithVariants = (basesData || [])
       .map((base) => {
         const variants = (variantsData || []).filter(v => v.base_id === base.id);
         return { ...base, variants };
       })
-      .filter(p => p.variants.some(v => v.stock > 0)); // Only show products with stock
+      
 
     setProducts(productsWithVariants);
     setLoading(false);
