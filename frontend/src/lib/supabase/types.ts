@@ -128,7 +128,9 @@ export type Database = {
           id: number
           base_id: number
           variant_name: string
-          price: number
+          unit_price: number
+          box_price: number | null
+          units_per_box: number | null
           stock: number
           sku: string | null
           enabled: boolean
@@ -137,7 +139,9 @@ export type Database = {
           id?: number
           base_id: number
           variant_name: string
-          price: number
+          unit_price: number
+          box_price?: number | null
+          units_per_box?: number | null
           stock?: number
           sku?: string | null
           enabled?: boolean
@@ -146,7 +150,9 @@ export type Database = {
           id?: number
           base_id?: number
           variant_name?: string
-          price?: number
+          unit_price?: number
+          box_price?: number | null
+          units_per_box?: number | null
           stock?: number
           sku?: string | null
           enabled?: boolean
@@ -217,16 +223,19 @@ export type Database = {
           profile_id: string
           variant_id: number
           quantity: number
+          sell_mode: Database["public"]["Enums"]["sell_mode"]
         }
         Insert: {
           profile_id: string
           variant_id: number
           quantity?: number
+          sell_mode?: Database["public"]["Enums"]["sell_mode"]
         }
         Update: {
           profile_id?: string
           variant_id?: number
           quantity?: number
+          sell_mode?: Database["public"]["Enums"]["sell_mode"]
         }
         Relationships: [
           {
@@ -284,6 +293,8 @@ export type Database = {
           quantity: number
           unit_price: number
           vat: number
+          sell_mode: Database["public"]["Enums"]["sell_mode"]
+          units_per_box: number | null
         }
         Insert: {
           order_id: number
@@ -291,6 +302,8 @@ export type Database = {
           quantity: number
           unit_price: number
           vat: number
+          sell_mode: Database["public"]["Enums"]["sell_mode"]
+          units_per_box?: number | null
         }
         Update: {
           order_id?: number
@@ -298,6 +311,8 @@ export type Database = {
           quantity?: number
           unit_price?: number
           vat?: number
+          sell_mode?: Database["public"]["Enums"]["sell_mode"]
+          units_per_box?: number | null
         }
         Relationships: [
           {
@@ -377,6 +392,7 @@ export type Database = {
     Enums: {
       Status: "submitted" | "confirmed" | "completed" | "cancelled"
       Roles: "customer" | "admin"
+      sell_mode: "unit" | "box"
     }
     CompositeTypes: {
       [_ in never]: never

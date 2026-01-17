@@ -13,6 +13,11 @@ CREATE TYPE public.Roles AS ENUM (
     'admin'
 );
 
+CREATE TYPE public.sell_mode AS ENUM (
+    'unit',
+    'box'
+);
+
 -- --------------------------------
 -- Helper function to check admin status (avoids RLS recursion)
 -- --------------------------------
@@ -46,7 +51,17 @@ CREATE TABLE public.profiles (
 
     city TEXT,
     street TEXT,
-    zip TEXT
+    zip TEXT,
+
+    -- Format validation constraints
+    CONSTRAINT telephone_format CHECK (
+        telephone IS NULL OR 
+        telephone ~ '^(\+30)?[0-9]{10}$'
+    ),
+    CONSTRAINT afm_format CHECK (
+        afm_number IS NULL OR 
+        afm_number ~ '^[0-9]{9}$'
+    )
 );
 
 --- Row Level Security Policies for Profiles
@@ -157,13 +172,16 @@ CREATE TABLE public.product_variants (
         ON DELETE CASCADE,
 
     variant_name TEXT NOT NULL,
-    price NUMERIC(10,2) NOT NULL,
+    unit_price NUMERIC(10,2) NOT NULL,
+    box_price NUMERIC(10,2),
+    units_per_box INTEGER,
     stock INTEGER NOT NULL DEFAULT 0,
     sku TEXT,
     enabled BOOLEAN NOT NULL DEFAULT true
 );
 
 CREATE INDEX idx_product_variants_base ON public.product_variants(base_id);
+CREATE INDEX idx_product_variants_stock ON public.product_variants(stock);
 
 -- Row Level Security Policies for Product Variants
 ALTER TABLE public.product_variants ENABLE ROW LEVEL SECURITY;
@@ -242,7 +260,8 @@ CREATE TABLE public.cart (
         ON DELETE CASCADE,
 
     quantity INTEGER NOT NULL DEFAULT 1,
-    PRIMARY KEY (profile_id, variant_id)
+    sell_mode public.sell_mode NOT NULL DEFAULT 'unit',
+    PRIMARY KEY (profile_id, variant_id, sell_mode)
 );
 
 -- Row Level Security Policies for Cart
@@ -301,9 +320,13 @@ CREATE TABLE public.order_has_variants (
     quantity INTEGER NOT NULL,
     unit_price NUMERIC(10,2) NOT NULL,
     vat INTEGER NOT NULL,
+    sell_mode public.sell_mode NOT NULL,
+    units_per_box INTEGER,
 
-    PRIMARY KEY (order_id, variant_id)
+    PRIMARY KEY (order_id, variant_id, sell_mode)
 );
+
+CREATE INDEX idx_order_has_variants_order ON public.order_has_variants(order_id);
 
 -- Row Level Security Policies for Order_has_variants
 ALTER TABLE public.order_has_variants ENABLE ROW LEVEL SECURITY;
@@ -391,14 +414,24 @@ BEGIN
     RAISE EXCEPTION 'Cart is empty';
   END IF;
 
-  -- 3. Lock variant rows & check stock
+  -- 3. Lock all involved variants (prevents race conditions)
+  PERFORM 1
+  FROM product_variants pv
+  JOIN cart c ON c.variant_id = pv.id
+  WHERE c.profile_id = auth.uid()
+  FOR UPDATE;
+
+  -- 4. Check stock sufficiency (item-level truth)
   SELECT EXISTS (
     SELECT 1
     FROM cart c
     JOIN product_variants pv ON pv.id = c.variant_id
     WHERE c.profile_id = auth.uid()
-      AND pv.stock < c.quantity
-    FOR UPDATE
+      AND pv.stock <
+        CASE
+          WHEN c.sell_mode = 'unit' THEN c.quantity
+          ELSE c.quantity * pv.units_per_box
+        END
   )
   INTO v_insufficient_stock;
 
@@ -406,33 +439,49 @@ BEGIN
     RAISE EXCEPTION 'Insufficient stock for one or more items';
   END IF;
 
-  -- 4. Insert order items
+  -- 5. Insert order items (explicit sell_mode, snapshotted pricing)
   INSERT INTO order_has_variants (
     order_id,
     variant_id,
     quantity,
     unit_price,
-    vat
+    vat,
+    sell_mode,
+    units_per_box
   )
   SELECT
     p_order_id,
     c.variant_id,
     c.quantity,
-    pv.price,
-    pb.vat
+    CASE
+      WHEN c.sell_mode = 'unit' THEN pv.unit_price
+      ELSE pv.box_price
+    END,
+    pb.vat,
+    c.sell_mode,
+    pv.units_per_box
   FROM cart c
   JOIN product_variants pv ON pv.id = c.variant_id
   JOIN product_bases pb ON pb.id = pv.base_id
   WHERE c.profile_id = auth.uid();
 
-  -- 5. Deduct stock
+  -- 6. Deduct stock (always item-level)
   UPDATE product_variants pv
-  SET stock = pv.stock - c.quantity
+  SET stock = pv.stock -
+    CASE
+      WHEN c.sell_mode = 'unit' THEN c.quantity
+      ELSE c.quantity * pv.units_per_box
+    END
   FROM cart c
   WHERE pv.id = c.variant_id
     AND c.profile_id = auth.uid();
 
-  -- 6. Clear cart
+  -- 7. Update order status
+  UPDATE orders
+  SET status = 'confirmed'
+  WHERE id = p_order_id;
+
+  -- 8. Clear cart
   DELETE FROM cart
   WHERE profile_id = auth.uid();
 

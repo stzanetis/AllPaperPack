@@ -123,7 +123,7 @@ const Index = () => {
         <div className="relative mb-12 w-full max-w-7xl">
           {carouselImages.length > 0 ? (
             <>
-              <div className="relative aspect-[28/9] overflow-hidden rounded-lg">
+              <div className="relative aspect-[28/9] overflow-hidden rounded-2xl">
               {carouselImages.map((image, index) => {
                 const isActive = index === currentSlide;
                 

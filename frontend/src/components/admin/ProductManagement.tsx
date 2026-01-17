@@ -18,7 +18,9 @@ interface ProductVariant {
   id: number;
   base_id: number;
   variant_name: string;
-  price: number;
+  unit_price: number;
+  box_price: number | null;
+  units_per_box: number | null;
   stock: number;
   sku: string | null;
   enabled: boolean;
@@ -91,7 +93,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
     // Fetch all variants
     const { data: variantsData } = await supabase
       .from('product_variants')
-      .select('*');
+      .select('id, base_id, variant_name, unit_price, box_price, units_per_box, stock, sku, enabled');
 
     // Fetch all product tags
     const { data: productTagsData } = await supabase
@@ -221,7 +223,9 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
     const variantData = {
       base_id: selectedProductForVariant!.id,
       variant_name: formData.get('variant_name') as string,
-      price: parseFloat(formData.get('price') as string),
+      unit_price: parseFloat(formData.get('unit_price') as string),
+      box_price: formData.get('box_price') ? parseFloat(formData.get('box_price') as string) : null,
+      units_per_box: formData.get('units_per_box') ? parseInt(formData.get('units_per_box') as string) : null,
       stock: parseInt(formData.get('stock') as string) || 0,
       sku: formData.get('sku') as string || null,
     };
@@ -533,16 +537,41 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                   defaultValue={editingVariant?.variant_name || ''}
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="ml-2" htmlFor="unit_price">Τιμή ανά Συσκευασία (€)</Label>
+                  <Input
+                    id="unit_price"
+                    name="unit_price"
+                    type="number"
+                    step="0.01"
+                    required
+                    className="rounded-3xl"
+                    defaultValue={editingVariant?.unit_price || ''}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="ml-2" htmlFor="box_price">Τιμή ανά Κιβώτιο (€)</Label>
+                  <Input
+                    id="box_price"
+                    name="box_price"
+                    type="number"
+                    step="0.01"
+                    placeholder="Προαιρετικό"
+                    className="rounded-3xl"
+                    defaultValue={editingVariant?.box_price || ''}
+                  />
+                </div>
+              </div>
               <div className="space-y-1">
-                <Label className="ml-2" htmlFor="price">Τιμή (Χονδρική)</Label>
+                <Label className="ml-2" htmlFor="units_per_box">Συσκευασίες ανά Κιβώτιο</Label>
                 <Input
-                  id="price"
-                  name="price"
+                  id="units_per_box"
+                  name="units_per_box"
                   type="number"
-                  step="0.01"
-                  required
+                  placeholder="Προαιρετικό"
                   className="rounded-3xl"
-                  defaultValue={editingVariant?.price || ''}
+                  defaultValue={editingVariant?.units_per_box || ''}
                 />
               </div>
               <div className="space-y-1">
@@ -677,7 +706,9 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                               <TableHeader>
                                 <TableRow>
                                   <TableHead>Όνομα</TableHead>
-                                  <TableHead>Τιμή</TableHead>
+                                  <TableHead>Τιμή Συσκευασίας</TableHead>
+                                  <TableHead>Τιμή Κιβωτίου</TableHead>
+                                  <TableHead>Τεμ./Κιβ.</TableHead>
                                   <TableHead>Απόθεμα</TableHead>
                                   <TableHead>SKU</TableHead>
                                   <TableHead className="w-20">Ενεργό</TableHead>
@@ -688,7 +719,9 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                                 {product.variants.map((variant) => (
                                   <TableRow key={variant.id}>
                                     <TableCell>{variant.variant_name}</TableCell>
-                                    <TableCell>{variant.price.toFixed(2)}€</TableCell>
+                                    <TableCell>{variant.unit_price.toFixed(2)}€</TableCell>
+                                    <TableCell>{variant.box_price ? `${variant.box_price.toFixed(2)}€` : '-'}</TableCell>
+                                    <TableCell>{variant.units_per_box || '-'}</TableCell>
                                     <TableCell>
                                       <Badge variant={variant.stock > 0 ? "default" : "destructive"}>
                                         {variant.stock}

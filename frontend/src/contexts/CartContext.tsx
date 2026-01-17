@@ -6,10 +6,13 @@ import { toast } from '@/components/ui/use-toast';
 interface CartItem {
   variant_id: number;
   quantity: number;
+  sell_mode: 'unit' | 'box';
   variant: {
     id: number;
     variant_name: string;
-    price: number;
+    unit_price: number;
+    box_price: number | null;
+    units_per_box: number | null;
     stock: number;
     base: {
       id: number;
@@ -23,9 +26,9 @@ interface CartItem {
 interface CartContextType {
   items: CartItem[];
   loading: boolean;
-  addToCart: (variantId: number, quantity: number) => Promise<void>;
-  updateQuantity: (variantId: number, quantity: number) => Promise<void>;
-  removeFromCart: (variantId: number) => Promise<void>;
+  addToCart: (variantId: number, quantity: number, sellMode: 'unit' | 'box') => Promise<void>;
+  updateQuantity: (variantId: number, quantity: number, sellMode: 'unit' | 'box') => Promise<void>;
+  removeFromCart: (variantId: number, sellMode: 'unit' | 'box') => Promise<void>;
   clearCart: () => Promise<void>;
   subtotal: number;
   vatAmount: number;
@@ -52,10 +55,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       .select(`
         variant_id,
         quantity,
+        sell_mode,
         variant:variant_id (
           id,
           variant_name,
-          price,
+          unit_price,
+          box_price,
+          units_per_box,
           stock,
           base:base_id (
             id,
@@ -84,7 +90,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     fetchCartItems();
   }, [user]);
 
-  const addToCart = async (variantId: number, quantity: number) => {
+  const addToCart = async (variantId: number, quantity: number, sellMode: 'unit' | 'box') => {
     if (!user) {
       toast({
         title: "Απαιτείται σύνδεση",
@@ -94,8 +100,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    // Check if item already exists in cart
-    const existingItem = items.find(item => item.variant_id === variantId);
+    // Check if item already exists in cart with same variant and sell mode
+    const existingItem = items.find(item => item.variant_id === variantId && item.sell_mode === sellMode);
     
     if (existingItem) {
       // Update quantity
@@ -104,7 +110,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         .from('cart')
         .update({ quantity: newQuantity })
         .eq('profile_id', user.id)
-        .eq('variant_id', variantId);
+        .eq('variant_id', variantId)
+        .eq('sell_mode', sellMode);
 
       if (error) {
         console.error('Error updating cart:', error);
@@ -128,6 +135,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           profile_id: user.id,
           variant_id: variantId,
           quantity,
+          sell_mode: sellMode,
         });
 
       if (error) {
@@ -147,18 +155,18 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const updateQuantity = async (variantId: number, quantity: number) => {
+  const updateQuantity = async (variantId: number, quantity: number, sellMode: 'unit' | 'box') => {
     if (!user) return;
 
     if (quantity <= 0) {
-      await removeFromCart(variantId);
+      await removeFromCart(variantId, sellMode);
       return;
     }
 
     // Optimistic update - update UI immediately
     setItems(prevItems => 
       prevItems.map(item => 
-        item.variant_id === variantId 
+        item.variant_id === variantId && item.sell_mode === sellMode
           ? { ...item, quantity } 
           : item
       )
@@ -170,6 +178,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       .update({ quantity })
       .eq('profile_id', user.id)
       .eq('variant_id', variantId)
+      .eq('sell_mode', sellMode)
       .then(({ error }) => {
         if (error) {
           console.error('Error updating quantity:', error);
@@ -184,11 +193,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       });
   };
 
-  const removeFromCart = async (variantId: number) => {
+  const removeFromCart = async (variantId: number, sellMode: 'unit' | 'box') => {
     if (!user) return;
 
     // Optimistic update - remove from UI immediately
-    setItems(prevItems => prevItems.filter(item => item.variant_id !== variantId));
+    setItems(prevItems => prevItems.filter(item => !(item.variant_id === variantId && item.sell_mode === sellMode)));
 
     // Delete from database in background
     supabase
@@ -196,6 +205,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       .delete()
       .eq('profile_id', user.id)
       .eq('variant_id', variantId)
+      .eq('sell_mode', sellMode)
       .then(({ error }) => {
         if (error) {
           console.error('Error removing from cart:', error);
@@ -231,11 +241,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Calculate subtotal (without VAT)
-  const subtotal = items.reduce((sum, item) => sum + (item.variant.price * item.quantity), 0);
+  const subtotal = items.reduce((sum, item) => {
+    const price = item.sell_mode === 'unit' ? item.variant.unit_price : (item.variant.box_price || item.variant.unit_price);
+    return sum + (price * item.quantity);
+  }, 0);
   
   // Calculate total VAT amount
   const vatAmount = items.reduce((sum, item) => {
-    const itemPrice = item.variant.price * item.quantity;
+    const price = item.sell_mode === 'unit' ? item.variant.unit_price : (item.variant.box_price || item.variant.unit_price);
+    const itemPrice = price * item.quantity;
     const itemVat = itemPrice * (item.variant.base.vat / 100);
     return sum + itemVat;
   }, 0);

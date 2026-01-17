@@ -218,7 +218,7 @@ SELECT setval('product_bases_id_seq', (SELECT MAX(id) FROM product_bases));
 -- PRODUCT VARIANTS
 -- ================================
 -- Each product now has a single "Κανονικό" variant with the original price and stock
-INSERT INTO "public"."product_variants" ("base_id", "variant_name", "price", "stock") VALUES 
+INSERT INTO "public"."product_variants" ("base_id", "variant_name", "unit_price", "stock") VALUES 
 (1, 'Κανονικό', 18.00, 5),
 (2, 'Κανονικό', 10.00, 44),
 (3, 'Κανονικό', 9.00, 3),

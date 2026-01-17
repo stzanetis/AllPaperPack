@@ -325,7 +325,7 @@ export const Header = () => {
                       {childrenByParent[pc.id]?.map((sc) => (
                         <li key={sc.id} className="truncate">
                           <Link
-                            to={`/products?category=${sc.id}`}
+                            to={`/products?category=${pc.id}&subcategory=${sc.id}`}
                             className="text-sm text-[#75796b] hover:text-primary"
                           >
                             {sc.name}

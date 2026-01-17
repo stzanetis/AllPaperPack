@@ -11,6 +11,8 @@ interface OrderItem {
   quantity: number;
   unit_price: number;
   vat: number;
+  sell_mode: 'unit' | 'box';
+  units_per_box: number | null;
   variant: {
     variant_name: string;
     sku: string | null;
@@ -50,6 +52,8 @@ export const OrderManagement = () => {
           quantity,
           unit_price,
           vat,
+          sell_mode,
+          units_per_box,
           variant:product_variants (
             variant_name,
             sku,
@@ -265,29 +269,36 @@ export const OrderManagement = () => {
                             const unitPriceWithVat = item.unit_price * (1 + item.vat / 100);
 
                             return (
-                              <div key={idx} className="flex items-center gap-4">
-                                {item.variant?.base?.image_path ? (
-                                  <img
-                                    src={item.variant.base.image_path}
-                                    alt={item.variant.base.name}
-                                    className="w-16 h-16 object-cover rounded-md border"
-                                  />
-                                ) : (
-                                  <div className="w-16 h-16 bg-muted rounded-md border flex items-center justify-center">
-                                    <Package className="h-6 w-6 text-muted-foreground" />
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium truncate">{item.variant?.base?.name}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {item.variant?.variant_name} × {item.quantity}
-                                    {item.variant?.sku && <span className="ml-2">( {item.variant.sku} )</span>}
+                              <div key={idx} className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+                                <div className="flex flex-row items-center gap-4 md:flex-1 md:min-w-0">
+                                  {item.variant?.base?.image_path ? (
+                                    <img
+                                      src={item.variant.base.image_path}
+                                      alt={item.variant.base.name}
+                                      className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-xl border flex-shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-16 h-16 md:w-20 md:h-20 bg-muted rounded-md border flex items-center justify-center flex-shrink-0">
+                                      <Package className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-sm md:text-base truncate">{item.variant?.base?.name}</div>
+                                    <div className="text-xs md:text-sm text-muted-foreground">
+                                      {item.variant?.variant_name} × {item.quantity} {item.sell_mode === 'unit' ? 'συσ.' : 'κιβ.'}
+                                      {item.sell_mode === 'box' && item.units_per_box && <span> ({item.units_per_box} συσ./κιβ.)</span>}
+                                    </div>
+                                    {item.variant?.sku && (
+                                      <div className="text-xs md:text-sm font-bold text-muted-foreground mt-1">
+                                        {item.variant.sku}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  <div className="font-medium">{formatPrice(itemTotal)}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {formatPrice(unitPriceWithVat)} / τεμ. (ΦΠΑ {item.vat}%)
+                                <div className="md:text-right md:ml-auto">
+                                  <div className="font-medium text-sm md:text-base">{formatPrice(itemTotal)}</div>
+                                  <div className="text-xs md:text-sm text-muted-foreground">
+                                    {formatPrice(unitPriceWithVat)} / {item.sell_mode === 'unit' ? 'συσ.' : 'κιβ.'} (ΦΠΑ {item.vat}%)
                                   </div>
                                 </div>
                               </div>

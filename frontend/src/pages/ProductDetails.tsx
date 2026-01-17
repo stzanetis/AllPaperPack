@@ -11,9 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface ProductVariant {
   id: number;
   variant_name: string;
-  price: number;
+  unit_price: number;
+  box_price: number | null;
+  units_per_box: number | null;
   stock: number;
   sku: string | null;
+  enabled: boolean;
 }
 
 interface Tag {
@@ -28,6 +31,7 @@ interface ProductBase {
   description: string | null;
   image_path: string | null;
   vat: number;
+  enabled: boolean;
   category_id: number;
   categories: {
     id: number;
@@ -46,6 +50,7 @@ export default function ProductDetails() {
   const { addToCart } = useCart();
   const [qty, setQty] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+  const [purchaseType, setPurchaseType] = useState<'item' | 'box'>('item');
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -61,6 +66,7 @@ export default function ProductDetails() {
           description,
           image_path,
           vat,
+          enabled,
           category_id,
           categories:category_id (
             id,
@@ -79,9 +85,9 @@ export default function ProductDetails() {
       // Fetch variants
       const { data: variantsData } = await supabase
         .from('product_variants')
-        .select('*')
+        .select('id, variant_name, unit_price, box_price, units_per_box, stock, sku, enabled')
         .eq('base_id', parseInt(id))
-        .order('price', { ascending: true });
+        .order('unit_price', { ascending: true });
 
       // Fetch tags
       const { data: tagsData } = await supabase
@@ -98,10 +104,10 @@ export default function ProductDetails() {
         tags,
       } as ProductBase);
 
-      // Select first in-stock variant by default
-      const firstInStock = variants.find(v => v.stock > 0);
-      if (firstInStock) {
-        setSelectedVariantId(firstInStock.id);
+      // Select first available variant by default (enabled and in stock)
+      const firstAvailable = variants.find(v => v.enabled && v.stock > 0);
+      if (firstAvailable) {
+        setSelectedVariantId(firstAvailable.id);
       } else if (variants.length > 0) {
         setSelectedVariantId(variants[0].id);
       }
@@ -112,13 +118,25 @@ export default function ProductDetails() {
   }, [id]);
 
   const selectedVariant = product?.variants.find(v => v.id === selectedVariantId);
-  const price = selectedVariant?.price || 0;
+
+  useEffect(() => {
+    if (selectedVariant) {
+      if (selectedVariant.unit_price && !selectedVariant.box_price) {
+        setPurchaseType('item');
+      } else if (!selectedVariant.unit_price && selectedVariant.box_price) {
+        setPurchaseType('box');
+      }
+    }
+  }, [selectedVariant]);
+  const price = purchaseType === 'item' 
+    ? (selectedVariant?.unit_price || 0) 
+    : (selectedVariant?.box_price || selectedVariant?.unit_price || 0);
   const stock = selectedVariant?.stock || 0;
 
   const handleAdd = async () => {
     if (!selectedVariant || stock === 0) return;
     setAdding(true);
-    await addToCart(selectedVariant.id, qty);
+    await addToCart(selectedVariant.id, qty, purchaseType === 'item' ? 'unit' : 'box');
     setAdding(false);
   };
 
@@ -157,10 +175,13 @@ export default function ProductDetails() {
     );
   }
 
+  const availableVariants = product.variants.filter(v => v.enabled && v.stock > 0);
+  const isAvailable = product.enabled && availableVariants.length > 0;
+
   return (
-    <div className="container mx-auto px-4 py-10">
+    <div className={`container mx-auto px-4 py-10 ${!isAvailable ? 'opacity-80 grayscale pointer-events-none' : ''}`}>
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
-        <div className="lg:col-span-2 aspect-square max-w-md mx-auto overflow-hidden rounded-lg bg-muted">
+        <div className={`lg:col-span-2 aspect-square max-w-md mx-auto overflow-hidden rounded-lg bg-muted ${stock > 0 ? '' : 'opacity-80 grayscale'}`}>
           <img
             src={product.image_path || '/placeholder.svg'}
             alt={product.name}
@@ -220,7 +241,7 @@ export default function ProductDetails() {
           {/* Variant Selection */}
           {product.variants.length > 1 && (
             <div className="mb-6">
-              <label className="text-sm font-medium mb-2 block">Επιλέξτε είδος</label>
+              <label className="ml-1 text-md font-medium mb-2 block">Επιλέξτε είδος</label>
               <Select
                 value={selectedVariantId?.toString() || ''}
                 onValueChange={(value) => {
@@ -228,20 +249,27 @@ export default function ProductDetails() {
                   setQty(1);
                 }}
               >
-                <SelectTrigger className="w-full max-w-md rounded-3xl">
+                <SelectTrigger className="w-full h-12 rounded-3xl">
                   <SelectValue placeholder="Επιλέξτε είδος" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
                   {product.variants.map((variant) => (
-                    <SelectItem 
-                      key={variant.id} 
-                      value={variant.id.toString()}
-                      disabled={variant.stock === 0}
-                      className="rounded-xl"
-                    >
-                      {variant.variant_name} - {variant.price.toFixed(2)}€
-                      {variant.stock === 0 && ' (Εξαντλήθηκε)'}
-                    </SelectItem>
+                  <SelectItem 
+                    key={variant.id} 
+                    value={variant.id.toString()}
+                    disabled={variant.stock === 0}
+                    className="rounded-xl flex flex-col items-start"
+                  >
+                    <span>
+                    {variant.variant_name}
+                    {variant.stock === 0 && ' (Εξαντλήθηκε)'}
+                    </span>
+                    {variant.sku && (
+                    <span className="ml-2 text-xs font-bold">
+                      SKU: {variant.sku}
+                    </span>
+                    )}
+                  </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -249,42 +277,85 @@ export default function ProductDetails() {
           )}
 
           {/* Price and Purchase Section */}
-          <div className="mb-6">
-            {/* Price Display */}
-            <div className="p-4 bg-gray-50 rounded-3xl border border-gray-200 max-w-md">
-              <div className="flex items-center justify-between gap-6">
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground uppercase tracking-wide">Χοντρική</p>
-                  <p className="text-3xl font-bold text-primary">{price.toFixed(2)}€</p>
+            <div className="mb-6">
+            <div className={`grid gap-6 ${selectedVariant?.unit_price && selectedVariant?.box_price ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {/* Price Display */}
+              {selectedVariant?.unit_price && (
+                <div
+                  className={`p-4 rounded-3xl border cursor-pointer transition-colors ${
+                    purchaseType === 'item'
+                      ? 'bg-white border-primary shadow-sm'
+                      : 'bg-gray-50 border-gray-200'
+                  } ${!selectedVariant?.box_price ? 'max-w-none' : 'max-w-sm'}`}
+                  onClick={() => setPurchaseType('item')}
+                >
+                <div className="flex flex-col items-start gap-2">
+                  <span className={`text-xs font-semibold tracking-wide mb-1 ${
+                    purchaseType === 'item' ? 'text-primary' : 'text-gray-600'
+                  }`}>
+                  ΣΥΣΚΕΥΑΣΙΑ
+                  </span>
+                  <p className={`text-2xl md:text-4xl font-bold ${
+                    purchaseType === 'item' ? 'text-primary' : 'text-gray-700'
+                  }`}>{selectedVariant.unit_price.toFixed(2)}€</p>
+                  <span className="text-md md:text-lg text-muted-foreground">
+                  Με ΦΠΑ: <span className={`font-bold ${
+                    purchaseType === 'item' ? 'text-gray-700' : 'text-primary'
+                  }`}>{(selectedVariant.unit_price + (selectedVariant.unit_price * product.vat * 0.01)).toFixed(2)}€</span>
+                  </span>
                 </div>
-                <div className="h-12 w-px bg-gray-300" aria-hidden="true" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground uppercase tracking-wide">Με ΦΠΑ</p>
-                  <p className="text-3xl font-bold text-gray-700">
-                    {(price + (price * product.vat * 0.01)).toFixed(2)}€
-                  </p>
                 </div>
-              </div>
-            </div>
+              )}
 
-            {/* SKU Display */}
-            {selectedVariant?.sku && (
-              <div className="mt-2 ml-2 text-sm text-muted-foreground">
-                <span className="font-medium">SKU:</span> {selectedVariant.sku}
-              </div>
-            )}
-          </div>
+              {/* Price Display for Boxes */}
+              {selectedVariant?.box_price && (
+                <div
+                  className={`p-4 rounded-3xl border cursor-pointer transition-colors ${
+                    purchaseType === 'box'
+                      ? 'bg-white border-primary shadow-sm'
+                      : 'bg-gray-50 border-gray-200'
+                  } ${!selectedVariant?.unit_price ? 'max-w-none' : 'max-w-sm'}`}
+                  onClick={() => setPurchaseType('box')}
+                >
+                <div className="flex flex-col items-start gap-2">
+                  <span className={`text-xs font-semibold tracking-wide mb-1 ${
+                    purchaseType === 'box' ? 'text-primary' : 'text-gray-600'
+                  }`}>
+                  ΚΙΒΩΤΙΟ
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <p className={`text-2xl md:text-4xl font-bold ${
+                      purchaseType === 'box' ? 'text-primary' : 'text-gray-700'
+                    }`}>
+                      {selectedVariant.box_price.toFixed(2)}€
+                    </p>
+                    {selectedVariant.units_per_box && (
+                      <span className="text-md text-muted-foreground">
+                        ({selectedVariant.units_per_box} συσ.)
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-md md:text-lg text-muted-foreground">
+                  Με ΦΠΑ: <span className={`font-bold ${
+                    purchaseType === 'box' ? 'text-gray-700' : 'text-primary'
+                  }`}>{(selectedVariant.box_price + (selectedVariant.box_price * product.vat * 0.01)).toFixed(2)}€</span>
+                  </span>
+                </div>
+                </div>
+              )}
+            </div>
+            </div>
 
           {/* Quantity and Add to Cart */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
             {/* Add to Cart Button */}
             <Button
               onClick={handleAdd}
-              disabled={stock === 0 || adding || !selectedVariant}
+              disabled={stock === 0 || adding || !selectedVariant || (purchaseType === 'item' && !selectedVariant?.unit_price) || (purchaseType === 'box' && !selectedVariant?.box_price)}
               size="lg"
               className="w-full sm:w-auto sm:min-w-[240px] rounded-3xl"
             >
-              {adding ? 'Προσθήκη…' : 'Προσθήκη στο Καλάθι'}
+              {adding ? 'Προσθήκη…' : purchaseType === 'item' ? 'Προσθήκη Συσκευασίας στο Καλάθι' : 'Προσθήκη Κιβωτίου στο Καλάθι'}
             </Button>
 
             {/* Quantity Controls */}
@@ -325,7 +396,7 @@ export default function ProductDetails() {
             </div>
 
             {/* Stock Badge */}
-            <Badge variant={stock > 0 ? 'default' : 'destructive'} className="px-3 py-1">
+            <Badge variant={stock > 0 ? 'default' : 'destructive'} className={`px-3 py-1 ${stock > 0 ? '' : 'bg-red-400'}`}>
               {stock > 0 ? `${stock} σε απόθεμα` : 'Χωρίς απόθεμα'}
             </Badge>
           </div>

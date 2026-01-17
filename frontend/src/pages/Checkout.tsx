@@ -9,14 +9,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
-
-const isNonEmpty = (v?: string | null) => (v ?? '').toString().trim().length > 0;
+import { validateTelephone, validateAFM, isNonEmpty } from '@/lib/utils';
 
 export default function Checkout() {
   const { user, profile, loading: authLoading } = useAuth();
   const { items, loading: cartLoading, subtotal, vatAmount, total } = useCart();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const formatTelephone = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.slice(0, 10);
+  };
+
+  const formatAFM = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.slice(0, 9);
+  };
 
   // Shipping/billing details
   const [name, setName] = useState('');
@@ -86,6 +95,30 @@ export default function Checkout() {
           variant: 'destructive',
         });
         return;
+      }
+
+      // Validate telephone format
+      const phoneValidation = validateTelephone(telephone);
+      if (!phoneValidation.isValid) {
+        toast({
+          title: 'Μη έγκυρο τηλέφωνο',
+          description: phoneValidation.error,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Validate AFM format if provided
+      if (afmNumber.trim()) {
+        const afmValidation = validateAFM(afmNumber);
+        if (!afmValidation.isValid) {
+          toast({
+            title: 'Μη έγκυρο ΑΦΜ',
+            description: afmValidation.error,
+            variant: 'destructive',
+          });
+          return;
+        }
       }
     } else if (!savedComplete) {
       toast({
@@ -249,7 +282,7 @@ export default function Checkout() {
                       </div>
                       <div>
                         <Label htmlFor="telephone">Τηλέφωνο <span className="text-red-500">*</span></Label>
-                        <Input id="telephone" value={telephone} onChange={(e) => setTelephone(e.target.value)} required placeholder="+30 ..." />
+                        <Input id="telephone" value={telephone} onChange={(e) => setTelephone(formatTelephone(e.target.value))} required placeholder="6912345678" maxLength={10} />
                       </div>
                     </CardContent>
                   </Card>
@@ -289,7 +322,7 @@ export default function Checkout() {
                       </div>
                       <div>
                         <Label htmlFor="afmNumber">ΑΦΜ <span className="text-red-500">*</span></Label>
-                        <Input id="afmNumber" required value={afmNumber} onChange={(e) => setAfmNumber(e.target.value)} placeholder="123456789" />
+                        <Input id="afmNumber" required value={afmNumber} onChange={(e) => setAfmNumber(formatAFM(e.target.value))} placeholder="123456789" maxLength={9} />
                       </div>
                     </CardContent>
                   </Card>
@@ -309,10 +342,11 @@ export default function Checkout() {
               {/* Items List */}
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {items.map((item) => {
-                  const itemSubtotal = item.variant.price * item.quantity;
+                  const price = item.sell_mode === 'unit' ? item.variant.unit_price : (item.variant.box_price || item.variant.unit_price);
+                  const itemSubtotal = price * item.quantity;
                   const itemVat = itemSubtotal * (item.variant.base.vat / 100);
                   return (
-                    <div key={item.variant_id} className="flex gap-3 text-sm">
+                    <div key={`${item.variant_id}-${item.sell_mode}`} className="flex gap-3 text-sm">
                       <img
                         src={item.variant.base.image_path ?? ''}
                         alt={item.variant.base.name}
@@ -321,7 +355,10 @@ export default function Checkout() {
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{item.variant.base.name}</div>
                         <div className="text-muted-foreground text-xs">
-                          {item.variant.variant_name} × {item.quantity}
+                          {item.variant.variant_name} × {item.quantity} {item.sell_mode === 'unit' ? 'συσ.' : 'κιβ.'}
+                          {item.sell_mode === 'box' && item.variant.units_per_box && (
+                            <span> ({item.variant.units_per_box} συσ./κιβ.)</span>
+                          )}
                         </div>
                       </div>
                       <div className="text-right">

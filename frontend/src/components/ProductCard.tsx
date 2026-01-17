@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom';
 interface ProductVariant {
   id: number;
   variant_name: string;
-  price: number;
+  unit_price: number;
+  box_price: number | null;
+  units_per_box: number | null;
   stock: number;
 }
 
@@ -28,10 +30,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   
   // Get the cheapest variant from all variants
   const cheapestVariant = product.variants.length > 0
-    ? product.variants.reduce((min, v) => v.price < min.price ? v : min, product.variants[0])
+    ? product.variants.reduce((min, v) => v.unit_price < min.unit_price ? v : min, product.variants[0])
     : null;
 
-  const price = cheapestVariant?.price || 0;
+  const price = cheapestVariant?.unit_price || 0;
 
   return (
     <Card className="h-full flex flex-col rounded-3xl relative">

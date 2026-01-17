@@ -9,8 +9,11 @@ import { useSearchParams } from 'react-router-dom';
 interface ProductVariant {
   id: number;
   variant_name: string;
-  price: number;
+  unit_price: number;
+  box_price: number | null;
+  units_per_box: number | null;
   stock: number;
+  sku: string | null;
   enabled: boolean;
 }
 
@@ -65,10 +68,21 @@ export default function Products() {
     const urlParent = searchParams.get('category') || 'all';
     const urlSub = searchParams.get('subcategory') || 'all';
     const urlTag = searchParams.get('tag') || 'all';
+    
+    // Check if the category parameter is actually a subcategory
+    if (urlParent !== 'all' && categories.length > 0) {
+      const category = categories.find(c => c.id.toString() === urlParent);
+      if (category && category.parent_id !== null) {
+        setSelectedParentCategory(category.parent_id.toString());
+        setSelectedSubCategory(urlParent);
+        return;
+      }
+    }
+    
     setSelectedParentCategory(urlParent);
     setSelectedSubCategory(urlSub);
     setSelectedTag(urlTag);
-  }, [searchParams]);
+  }, [searchParams, categories]);
 
   // Reset subcategory when parent changes
   useEffect(() => {

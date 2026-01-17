@@ -10,11 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { User, MapPin, Building2, Lock, Package, ChevronDown, ChevronUp } from 'lucide-react';
+import { validateTelephone, validateAFM } from '@/lib/utils';
 
 interface OrderItem {
   quantity: number;
   unit_price: number;
   vat: number;
+  sell_mode: 'unit' | 'box';
+  units_per_box: number | null;
   variant: {
     variant_name: string;
     sku: string | null;
@@ -57,6 +60,16 @@ export default function Account() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  const formatTelephone = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.slice(0, 10);
+  };
+
+  const formatAFM = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.slice(0, 9);
+  };
+
   // Order history state
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
@@ -92,6 +105,8 @@ export default function Account() {
             quantity,
             unit_price,
             vat,
+            sell_mode,
+            units_per_box,
             variant:product_variants (
               variant_name,
               sku,
@@ -136,6 +151,16 @@ export default function Account() {
     setMsg(null);
 
     try {
+      const phoneValidation = validateTelephone(telephone);
+      if (!phoneValidation.isValid) {
+        throw new Error(phoneValidation.error);
+      }
+
+      const afmValidation = validateAFM(afmNumber);
+      if (!afmValidation.isValid) {
+        throw new Error(afmValidation.error);
+      }
+
       const { error: upErr } = await supabase
         .from('profiles')
         .update({
@@ -243,7 +268,7 @@ export default function Account() {
                   </div>
                   <div className="space-y-1">
                     <Label className="ml-2" htmlFor="telephone">Τηλέφωνο</Label>
-                    <Input className="rounded-full" id="telephone" value={telephone} onChange={(e) => setTelephone(e.target.value)} placeholder="+30 ..." />
+                    <Input className="rounded-full" id="telephone" value={telephone} onChange={(e) => setTelephone(formatTelephone(e.target.value))} placeholder="6912345678" maxLength={10} />
                   </div>
                 </CardContent>
               </Card>
@@ -291,7 +316,7 @@ export default function Account() {
                   </div>
                   <div className="space-y-1">
                     <Label className="ml-2" htmlFor="afm">ΑΦΜ</Label>
-                    <Input className="rounded-full" id="afm" value={afmNumber} onChange={(e) => setAfmNumber(e.target.value)} placeholder="123456789" minLength={9} maxLength={9} />
+                    <Input className="rounded-full" id="afm" value={afmNumber} onChange={(e) => setAfmNumber(formatAFM(e.target.value))} placeholder="123456789" maxLength={9} />
                   </div>
                 </CardContent>
               </Card>
@@ -342,7 +367,7 @@ export default function Account() {
         {/* Order History Tab */}
         <TabsContent value="orders">
           <Card className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105">
-            <CardContent>
+            <CardContent className="p-2 md:p-4">
               {ordersLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -357,7 +382,7 @@ export default function Account() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-4 pt-6">
+                <div className="space-y-4">
                   {orders.map((order) => {
                     const isExpanded = expandedOrders.has(order.id);
                     const statusInfo = statusLabels[order.status] || { label: order.status, variant: 'secondary' as const };
@@ -397,29 +422,36 @@ export default function Account() {
                                 const unitPriceWithVat = item.unit_price * (1 + item.vat / 100);
                                 
                                 return (
-                                  <div key={idx} className="flex items-center gap-4">
-                                    {item.variant?.base?.image_path ? (
-                                      <img
-                                        src={item.variant.base.image_path}
-                                        alt={item.variant.base.name}
-                                        className="w-16 h-16 object-cover rounded-md border"
-                                      />
-                                    ) : (
-                                      <div className="w-16 h-16 bg-muted rounded-md border flex items-center justify-center">
-                                        <Package className="h-6 w-6 text-muted-foreground" />
-                                      </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-medium truncate">{item.variant?.base?.name}</div>
-                                      <div className="text-sm text-muted-foreground">
-                                        {item.variant?.variant_name} × {item.quantity}
-                                        {item.variant?.sku && <span className="ml-2">( {item.variant.sku} )</span>}
+                                  <div key={idx} className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+                                    <div className="flex flex-row items-center gap-4 md:flex-1 md:min-w-0">
+                                      {item.variant?.base?.image_path ? (
+                                        <img
+                                          src={item.variant.base.image_path}
+                                          alt={item.variant.base.name}
+                                          className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-xl border flex-shrink-0"
+                                        />
+                                      ) : (
+                                        <div className="w-16 h-16 md:w-20 md:h-20 bg-muted rounded-md border flex items-center justify-center flex-shrink-0">
+                                          <Package className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-sm md:text-base truncate">{item.variant?.base?.name}</div>
+                                        <div className="text-xs md:text-sm text-muted-foreground">
+                                          {item.variant?.variant_name} × {item.quantity} {item.sell_mode === 'unit' ? 'συσ.' : 'κιβ.'}
+                                          {item.sell_mode === 'box' && item.units_per_box && <span> ({item.units_per_box} συσ./κιβ.)</span>}
+                                        </div>
+                                        {item.variant?.sku && (
+                                          <div className="text-xs md:text-sm font-bold text-muted-foreground mt-1">
+                                            {item.variant.sku}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
-                                    <div className="text-right">
-                                      <div className="font-medium">{formatPrice(itemTotal)}</div>
-                                      <div className="text-xs text-muted-foreground">
-                                        {formatPrice(unitPriceWithVat)} / τεμ. (ΦΠΑ {item.vat}%)
+                                    <div className="md:text-right md:ml-auto">
+                                      <div className="font-medium text-sm md:text-base">{formatPrice(itemTotal)}</div>
+                                      <div className="text-xs md:text-sm text-muted-foreground">
+                                        {formatPrice(unitPriceWithVat)} / {item.sell_mode === 'unit' ? 'συσ.' : 'κιβ.'} (ΦΠΑ {item.vat}%)
                                       </div>
                                     </div>
                                   </div>

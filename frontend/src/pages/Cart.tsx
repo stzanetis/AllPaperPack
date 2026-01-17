@@ -2,6 +2,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -57,58 +58,70 @@ export default function Cart() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => (
-            <Card key={item.variant_id} className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105 border">
-              <CardContent className="p-4 md:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <img
-                    src={item.variant.base.image_path ?? ''}
-                    alt={item.variant.base.name}
-                    className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-md flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm sm:text-base truncate">{item.variant.base.name}</h3>
-                    <p className="text-sm text-muted-foreground">{item.variant.variant_name}</p>
-                    <p className="text-muted-foreground text-sm">
-                      €{item.variant.price.toFixed(2)} ανά τεμάχιο
-                    </p>
+            <Card key={`${item.variant_id}-${item.sell_mode}`} className="rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105 border">
+              <CardContent className="p-4">
+                <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+                  <div className="flex flex-row items-center gap-4 md:flex-1 md:min-w-0">
+                    <img
+                      src={item.variant.base.image_path ?? ''}
+                      alt={item.variant.base.name}
+                      className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-xl flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-sm md:text-base truncate">{item.variant.base.name}</h3>
+                        <Badge variant="outline" className="text-xs md:text-sm">
+                          {item.sell_mode === 'unit' ? 'Συσκευασία' : 'Κιβώτιο'}
+                        </Badge>
+                      </div>
+                      <p className="text-xs md:text-sm text-muted-foreground">{item.variant.variant_name}</p>
+                      <p className="text-muted-foreground text-xs md:text-sm">
+                        €{item.sell_mode === 'unit' ? item.variant.unit_price.toFixed(2) : (item.variant.box_price || item.variant.unit_price).toFixed(2)} {item.sell_mode === 'unit' ? 'ανά συσκευασία' : 'ανά κιβώτιο'}
+                      </p>
+                      {item.sell_mode === 'box' && item.variant.units_per_box && (
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          {item.variant.units_per_box} συσκευασίες ανά κιβώτιο
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
-                    <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4">
+                    <div className="flex items-center gap-1 md:gap-2">
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full"
-                        onClick={() => updateQuantity(item.variant_id, item.quantity - 1)}
+                        className="h-8 w-8 md:h-10 md:w-10 rounded-full"
+                        onClick={() => updateQuantity(item.variant_id, item.quantity - 1, item.sell_mode)}
                       >
-                        <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <Minus className="h-3 w-3 md:h-4 md:w-4" />
                       </Button>
                       <Input
                         type="number"
                         value={item.quantity}
-                        onChange={(e) => updateQuantity(item.variant_id, parseInt(e.target.value) || 0)}
-                        className="w-14 sm:w-20 text-center h-8 sm:h-10 rounded-full"
+                        onChange={(e) => updateQuantity(item.variant_id, parseInt(e.target.value) || 0, item.sell_mode)}
+                        className="w-14 md:w-20 text-center h-8 md:h-10 rounded-full"
                         min="0"
                         max={item.variant.stock}
                       />
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full"
-                        onClick={() => updateQuantity(item.variant_id, item.quantity + 1)}
+                        className="h-8 w-8 md:h-10 md:w-10 rounded-full"
+                        onClick={() => updateQuantity(item.variant_id, item.quantity + 1, item.sell_mode)}
                         disabled={item.quantity >= item.variant.stock}
                       >
-                        <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <Plus className="h-3 w-3 md:h-4 md:w-4" />
                       </Button>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-4">
-                      <p className="font-semibold text-sm sm:text-base">
-                        €{(item.variant.price * item.quantity).toFixed(2)}
+                    <div className="flex items-center gap-2 md:gap-4">
+                      <p className="font-semibold text-sm md:text-base">
+                        €{((item.sell_mode === 'unit' ? item.variant.unit_price : (item.variant.box_price || item.variant.unit_price)) * item.quantity).toFixed(2)}
                       </p>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-10 w-10 hover:bg-red-400 rounded-full group"
-                        onClick={() => removeFromCart(item.variant_id)}
+                        className="h-8 w-8 md:h-10 md:w-10 hover:bg-red-400 rounded-full group"
+                        onClick={() => removeFromCart(item.variant_id, item.sell_mode)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500 group-hover:text-white" />
                       </Button>
