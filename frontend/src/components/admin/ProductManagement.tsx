@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -590,8 +590,8 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
             </TableHeader>
             <TableBody>
               {products.map((product) => (
-                <>
-                  <TableRow key={product.id}>
+                <Fragment key={product.id}>
+                  <TableRow>
                     <TableCell>
                       <Button
                         variant="ghost"
@@ -734,7 +734,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </Fragment>
               ))}
             </TableBody>
           </Table>

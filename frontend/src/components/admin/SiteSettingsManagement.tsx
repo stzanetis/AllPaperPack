@@ -153,6 +153,17 @@ export const SiteSettingsManagement = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: 'Σφάλμα',
+        description: 'Επιτρέπονται μόνο εικόνες JPEG, PNG, WebP και GIF',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
@@ -165,39 +176,73 @@ export const SiteSettingsManagement = () => {
 
     setUploading(true);
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `carousel_${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
 
-    const { error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
+      // Upload to the same PHP endpoint used by products
+      const uploadUrl = 'https://allpaperpack.gr/upload.php';
+
+      const xhr = new XMLHttpRequest();
+
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = (e.loaded / e.total) * 100;
+          // Could add progress tracking here if needed
+        }
       });
 
-    if (uploadError) {
+      const response = await new Promise<any>((resolve, reject) => {
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              resolve(data);
+            } catch (e) {
+              reject(new Error('Invalid response format'));
+            }
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              reject(new Error(errorData.message || 'Upload failed'));
+            } catch (e) {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error occurred'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload cancelled'));
+        });
+
+        xhr.open('POST', uploadUrl);
+        xhr.send(formData);
+      });
+
+      if (response.success && response.data) {
+        setNewImageUrl(response.data.url);
+        toast({
+          title: 'Επιτυχία',
+          description: 'Η εικόνα ανέβηκε. Πατήστε "Προσθήκη" για να την αποθηκεύσετε.',
+        });
+      } else {
+        throw new Error(response.message || 'Upload failed');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Σφάλμα κατά την ανέβασμα';
       toast({
-        title: 'Σφάλμα ανεβάσματος',
-        description: uploadError.message + ' - Βεβαιωθείτε ότι το bucket "product-images" υπάρχει στο Supabase Storage και είναι public.',
+        title: 'Σφάλμα',
+        description: errorMessage,
         variant: 'destructive',
       });
+    } finally {
       setUploading(false);
-      return;
     }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(filePath);
-
-    setNewImageUrl(publicUrl);
-    setUploading(false);
-    
-    toast({
-      title: 'Επιτυχία',
-      description: 'Η εικόνα ανέβηκε. Πατήστε "Προσθήκη" για να την αποθηκεύσετε.',
-    });
   };
 
   const toggleImageActive = async (id: number, currentActive: boolean) => {
