@@ -716,7 +716,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                                 {product.variants.map((variant) => (
                                   <TableRow key={variant.id}>
                                     <TableCell>{variant.variant_name}</TableCell>
-                                    <TableCell>{variant.unit_price.toFixed(2)}€</TableCell>
+                                    <TableCell>{variant.unit_price ? variant.unit_price.toFixed(2) : '-'}€</TableCell>
                                     <TableCell>{variant.box_price ? `${variant.box_price.toFixed(2)}€` : '-'}</TableCell>
                                     <TableCell>{variant.units_per_box || '-'}</TableCell>
                                     <TableCell>
