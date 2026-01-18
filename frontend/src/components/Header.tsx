@@ -253,8 +253,8 @@ export const Header = () => {
             {user ? (
               <>
                 <Link to="/cart" className="relative hidden md:block">
-                  <Button className="rounded-full hover:bg-primary" variant="ghost" size="icon">
-                    <ShoppingCart className="h-5 w-5 text-[#464940]" />
+                  <Button className="bg-[#eaf2d5] text-[#464940] font-semibold hover:bg-primary border-[#eaf2d5] rounded-full" variant="outline" size="icon">
+                    <ShoppingCart className="h-5 w-5" />
                     {itemCount > 0 && (
                       <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
                         {itemCount}
