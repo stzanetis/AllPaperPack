@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
 
 export default function Catalogues() {
-  // Sample catalogue data - you can replace with actual data from your database
   const catalogues = [
     {
       id: 1,
@@ -40,8 +39,6 @@ export default function Catalogues() {
   ];
 
   const handleDownload = (catalogue: typeof catalogues[0]) => {
-    // In a real application, you would implement proper download logic
-    // For now, we'll just open the PDF in a new tab
     window.open(catalogue.downloadUrl, '_blank');
   };
 
@@ -53,22 +50,30 @@ export default function Catalogues() {
 
       <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
         {catalogues.map((catalogue) => (
-          <Card key={catalogue.id} className="rounded-3xl hover:shadow-lg transition-shadow">
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-fit">
-                <FileText className="h-8 w-8 text-primary" />
-              </div>
-              <CardTitle className="text-xl">{catalogue.title}</CardTitle>
-              <CardDescription className="text-sm">
+          <Card key={catalogue.id} className="h-96 rounded-3xl hover:shadow-md transition-full duration-200 hover:scale-105 flex flex-col"
+            style={{
+              background: `linear-gradient(135deg, #ffffff 60%, #fafafa 00%)`,
+              color: '#333'
+            }}
+          >
+            <CardHeader className="text-center px-3">
+              <img
+                src={`https://allpaperpack.gr/uploads/img_696cd068874ac7.19388395_img_6966b9dc7b75f7.47356536_KF-004.jpg`}
+                alt={catalogue.title}
+                className="h-32 w-32 mx-auto mb-2"
+              />
+              <CardTitle className="text-2xl font-tinos line-clamp-2">{catalogue.title}</CardTitle>
+              <CardDescription className="text-sm mb-2">
                 {catalogue.description}
               </CardDescription>
             </CardHeader>
+              <div className="flex-1" />
             <CardContent className="space-y-4">
               <Button
                 onClick={() => handleDownload(catalogue)}
                 className="w-full rounded-3xl"
                 size="lg"
-              >
+                >
                 <Download className="h-4 w-4 mr-2" />
                 Κατέβασμα
               </Button>

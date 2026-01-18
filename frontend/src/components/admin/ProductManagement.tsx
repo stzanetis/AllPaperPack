@@ -545,7 +545,6 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                     name="unit_price"
                     type="number"
                     step="0.01"
-                    required
                     className="rounded-3xl"
                     defaultValue={editingVariant?.unit_price || ''}
                   />
@@ -557,7 +556,6 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                     name="box_price"
                     type="number"
                     step="0.01"
-                    placeholder="Προαιρετικό"
                     className="rounded-3xl"
                     defaultValue={editingVariant?.box_price || ''}
                   />
@@ -569,7 +567,6 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
                   id="units_per_box"
                   name="units_per_box"
                   type="number"
-                  placeholder="Προαιρετικό"
                   className="rounded-3xl"
                   defaultValue={editingVariant?.units_per_box || ''}
                 />
