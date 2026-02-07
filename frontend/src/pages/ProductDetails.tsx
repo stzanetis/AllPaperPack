@@ -221,7 +221,14 @@ export default function ProductDetails() {
           </div>
 
           {/* Product Name */}
-          <h1 className="text-2xl md:text-3xl text-gray-800 font-semibold mb-2">{product.name}</h1>
+          <h1 className="text-2xl md:text-3xl text-gray-800 font-semibold mb-4">
+            {product.name}
+            {selectedVariant?.sku && (
+              <span className="ml-2 text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-full align-middle">
+                SKU: {selectedVariant.sku}
+              </span>
+            )}
+          </h1>
           
           {/* Tags */}
           {product.tags && product.tags.length > 0 && (
@@ -264,11 +271,6 @@ export default function ProductDetails() {
                     {variant.variant_name}
                     {variant.stock === 0 && ' (Εξαντλήθηκε)'}
                     </span>
-                    {variant.sku && (
-                    <span className="ml-2 text-xs font-bold">
-                      SKU: {variant.sku}
-                    </span>
-                    )}
                   </SelectItem>
                   ))}
                 </SelectContent>
@@ -290,7 +292,7 @@ export default function ProductDetails() {
                   onClick={() => setPurchaseType('item')}
                 >
                 <div className="flex flex-col items-start gap-2">
-                  <span className={`text-xs font-semibold tracking-wide mb-1 ${
+                  <span className={`text-sm font-semibold tracking-wide mb-1 ${
                     purchaseType === 'item' ? 'text-primary' : 'text-gray-600'
                   }`}>
                   ΣΥΣΚΕΥΑΣΙΑ
@@ -318,22 +320,22 @@ export default function ProductDetails() {
                   onClick={() => setPurchaseType('box')}
                 >
                 <div className="flex flex-col items-start gap-2">
-                  <span className={`text-xs font-semibold tracking-wide mb-1 ${
+                    <span className={`text-sm font-semibold tracking-wide mb-1 ${
                     purchaseType === 'box' ? 'text-primary' : 'text-gray-600'
-                  }`}>
-                  ΚΙΒΩΤΙΟ
-                  </span>
+                    }`}>
+                    ΚΙΒΩΤΙΟ
+                    {selectedVariant.units_per_box && (
+                    <span>
+                      {' '}({selectedVariant.units_per_box} συσκευασίες)
+                    </span>
+                    )}
+                    </span>
                   <div className="flex items-baseline gap-2">
                     <p className={`text-2xl md:text-4xl font-bold ${
                       purchaseType === 'box' ? 'text-primary' : 'text-gray-700'
                     }`}>
                       {selectedVariant.box_price.toFixed(2)}€
                     </p>
-                    {selectedVariant.units_per_box && (
-                      <span className="text-md text-muted-foreground">
-                        ({selectedVariant.units_per_box} συσ.)
-                      </span>
-                    )}
                   </div>
                   <span className="text-md md:text-lg text-muted-foreground">
                   Με ΦΠΑ: <span className={`font-bold ${

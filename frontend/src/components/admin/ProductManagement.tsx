@@ -68,6 +68,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
   const [expandedProducts, setExpandedProducts] = useState<Set<number>>(new Set());
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchProducts = async () => {
     // Fetch product bases with category
@@ -397,17 +398,24 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
     );
   };
 
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <Card className="rounded-3xl">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Διαχείριση Προϊόντων</CardTitle>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm} className="rounded-full hover:bg-primary">
-              <Plus className="h-4 w-4 mr-2" />
-              Νέο Προϊόν
-            </Button>
-          </DialogTrigger>
+      <CardHeader>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between">
+            <CardTitle>Διαχείριση Προϊόντων</CardTitle>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={resetForm} className="rounded-full hover:bg-primary">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Νέο Προϊόν
+                </Button>
+              </DialogTrigger>
           <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -514,6 +522,14 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
             </form>
           </DialogContent>
         </Dialog>
+          </div>
+          <Input
+            placeholder="Αναζήτηση προϊόντων..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="rounded-full"
+          />
+        </div>
       </CardHeader>
       <CardContent>
         {/* Variant Dialog */}
@@ -615,7 +631,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <Fragment key={product.id}>
                   <TableRow>
                     <TableCell>

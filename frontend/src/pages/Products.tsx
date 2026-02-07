@@ -56,6 +56,7 @@ export default function Products() {
   const [selectedParentCategory, setSelectedParentCategory] = useState<string>(initialParentCategory);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>(initialSubCategory);
   const [selectedTag, setSelectedTag] = useState<string>(initialTag);
+  const [sortBy, setSortBy] = useState<'name' | 'price-asc' | 'price-desc'>('name');
 
   // Derived category lists
   const parentCategories = categories.filter((c) => c.parent_id === null);
@@ -262,6 +263,72 @@ export default function Products() {
     product.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getSortedProducts = () => {
+    const sorted = [...filteredProducts];
+    
+    switch (sortBy) {
+      case 'price-asc':
+        return sorted.sort((a, b) => {
+          const priceA = a.variants.length > 0 
+            ? Math.min(
+                ...a.variants
+                  .map(v => {
+                    const prices = [];
+                    if (v.unit_price) prices.push(v.unit_price);
+                    if (v.box_price) prices.push(v.box_price);
+                    return prices.length > 0 ? Math.min(...prices) : Infinity;
+                  })
+                  .filter(p => p !== Infinity)
+              )
+            : Infinity;
+          const priceB = b.variants.length > 0 
+            ? Math.min(
+                ...b.variants
+                  .map(v => {
+                    const prices = [];
+                    if (v.unit_price) prices.push(v.unit_price);
+                    if (v.box_price) prices.push(v.box_price);
+                    return prices.length > 0 ? Math.min(...prices) : Infinity;
+                  })
+                  .filter(p => p !== Infinity)
+              )
+            : Infinity;
+          return priceA - priceB;
+        });
+      case 'price-desc':
+        return sorted.sort((a, b) => {
+          const priceA = a.variants.length > 0 
+            ? Math.min(
+                ...a.variants
+                  .map(v => {
+                    const prices = [];
+                    if (v.unit_price) prices.push(v.unit_price);
+                    if (v.box_price) prices.push(v.box_price);
+                    return prices.length > 0 ? Math.min(...prices) : Infinity;
+                  })
+                  .filter(p => p !== Infinity)
+              )
+            : Infinity;
+          const priceB = b.variants.length > 0 
+            ? Math.min(
+                ...b.variants
+                  .map(v => {
+                    const prices = [];
+                    if (v.unit_price) prices.push(v.unit_price);
+                    if (v.box_price) prices.push(v.box_price);
+                    return prices.length > 0 ? Math.min(...prices) : Infinity;
+                  })
+                  .filter(p => p !== Infinity)
+              )
+            : Infinity;
+          return priceB - priceA;
+        });
+      case 'name':
+      default:
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -337,7 +404,22 @@ export default function Products() {
               </SelectContent>
             </Select>
           </div>
-        </div>
+          {/* Sort Dropdown */}
+          <div className="md:w-48">
+            <Select
+              value={sortBy}
+              onValueChange={(value) => setSortBy(value as 'name' | 'price-asc' | 'price-desc')}
+            >
+              <SelectTrigger className="rounded-full">
+                <SelectValue placeholder="Ταξινόμηση" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl">
+                <SelectItem className="rounded-xl hover:bg-primary focus:bg-primary" value="name">Όνομα (Α-Ω)</SelectItem>
+                <SelectItem className="rounded-xl hover:bg-primary focus:bg-primary" value="price-asc">Τιμή (Χαμηλότερη)</SelectItem>
+                <SelectItem className="rounded-xl hover:bg-primary focus:bg-primary" value="price-desc">Τιμή (Υψηλότερη)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>        </div>
       </div>
 
       {loading ? (
@@ -356,7 +438,7 @@ export default function Products() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {filteredProducts.map((product) => (
+          {getSortedProducts().map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
