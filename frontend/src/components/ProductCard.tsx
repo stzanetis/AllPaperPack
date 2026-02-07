@@ -28,12 +28,21 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const inStockVariants = product.variants.filter(variant => variant.stock > 0);
   const hasStock = inStockVariants.length > 0;
   
-  // Get the cheapest variant from all variants
-  const cheapestVariant = product.variants.length > 0
-    ? product.variants.reduce((min, v) => v.unit_price < min.unit_price ? v : min, product.variants[0])
-    : null;
+  // Get the cheapest price from all variants (considering both unit_price and box_price)
+  const cheapestPrice = product.variants.length > 0
+    ? Math.min(
+        ...product.variants
+          .map(v => {
+            const prices = [];
+            if (v.unit_price) prices.push(v.unit_price);
+            if (v.box_price) prices.push(v.box_price);
+            return prices.length > 0 ? Math.min(...prices) : Infinity;
+          })
+          .filter(p => p !== Infinity)
+      )
+    : 0;
 
-  const price = cheapestVariant?.unit_price || 0;
+  const price = cheapestPrice === Infinity ? 0 : cheapestPrice;
 
   return (
     <Card className="h-full flex flex-col rounded-3xl relative">
