@@ -32,3 +32,4 @@ package-lock.json
 TODO.md
 .env
 /setup/old
+/report
