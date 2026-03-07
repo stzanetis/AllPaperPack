@@ -7,15 +7,17 @@
 // ============================================
 // CONFIGURATION
 // ============================================
-define('UPLOAD_DIR', __DIR__ . '/uploads/');
-define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB
-define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'webp', 'gif']);
+define('UPLOAD_DIR',        __DIR__ . '/uploads/');
+define('UPLOAD_DIR_IMAGES', __DIR__ . '/uploads/images/');
+define('UPLOAD_DIR_PDFS',   __DIR__ . '/uploads/pdfs/');
+define('MAX_FILE_SIZE', 100 * 1024 * 1024); // 100MB
+define('MAX_FILE_SIZE_MB', round(MAX_FILE_SIZE / 1024 / 1024));
+define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf']);
 define('RATE_LIMIT_FILE', __DIR__ . '/rate_limit.json');
 define('MAX_UPLOADS_PER_IP', 20); // Max uploads per hour per IP
 define('RATE_LIMIT_WINDOW', 3600); // 1 hour in seconds
 
-// CORS Configuration - Update with your actual domain
+// CORS Configuration
 $allowedOrigins = [
     'https://allpaperpack.gr',
     'https://www.allpaperpack.gr'
@@ -90,7 +92,7 @@ function sanitizeFilename($filename) {
     return $filename;
 }
 
-function validateImage($file) {
+function validateFile($file) {
     $errors = [];
     
     // Check if file was uploaded
@@ -101,16 +103,7 @@ function validateImage($file) {
     
     // Check file size
     if ($file['size'] > MAX_FILE_SIZE) {
-        $errors[] = 'File size exceeds maximum allowed size (5MB)';
-    }
-    
-    // Check MIME type
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($finfo, $file['tmp_name']);
-    finfo_close($finfo);
-    
-    if (!in_array($mimeType, ALLOWED_TYPES)) {
-        $errors[] = 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed';
+        $errors[] = 'File size exceeds maximum allowed size (' . MAX_FILE_SIZE_MB . 'MB)';
     }
     
     // Check file extension
@@ -119,16 +112,45 @@ function validateImage($file) {
         $errors[] = 'Invalid file extension';
     }
     
-    // Verify it's actually an image
-    $imageInfo = getimagesize($file['tmp_name']);
-    if ($imageInfo === false) {
-        $errors[] = 'File is not a valid image';
-    }
-    
-    // Additional security check: ensure no PHP code in image
-    $content = file_get_contents($file['tmp_name']);
-    if (preg_match('/<\?php/i', $content) || preg_match('/<script/i', $content)) {
-        $errors[] = 'File contains prohibited content';
+    if ($extension === 'pdf') {
+        // Read only the header bytes needed for magic-byte check (avoid loading 100MB into memory)
+        $header = @file_get_contents($file['tmp_name'], false, null, 0, 1024);
+        if ($header === false) {
+            $errors[] = 'Could not read uploaded file';
+            return $errors;
+        }
+        // Validate PDF magic bytes (%PDF-)
+        if (substr($header, 0, 5) !== '%PDF-') {
+            $errors[] = 'File is not a valid PDF';
+        }
+        // Scan full content for embedded JavaScript (common malicious vector)
+        $fullContent = @file_get_contents($file['tmp_name']);
+        if ($fullContent === false) {
+            $errors[] = 'Could not read uploaded file';
+            return $errors;
+        }
+        if (preg_match('/\/JS\s*(\(|<<)|\/JavaScript\s*(\(|<<)/i', $fullContent)) {
+            $errors[] = 'PDF contains prohibited embedded scripts';
+        }
+        if (preg_match('/<\?php/i', $fullContent) || preg_match('/<script/i', $fullContent)) {
+            $errors[] = 'File contains prohibited content';
+        }
+    } else {
+        // Verify it's actually an image via magic bytes + structure
+        $imageInfo = getimagesize($file['tmp_name']);
+        if ($imageInfo === false) {
+            $errors[] = 'File is not a valid image';
+        }
+        // Read only what we need for injection checks (images are max 5MB)
+        $content = @file_get_contents($file['tmp_name']);
+        if ($content === false) {
+            $errors[] = 'Could not read uploaded file';
+            return $errors;
+        }
+        // Block PHP/HTML injection
+        if (preg_match('/<\?php/i', $content) || preg_match('/<script/i', $content)) {
+            $errors[] = 'File contains prohibited content';
+        }
     }
     
     return $errors;
@@ -170,19 +192,42 @@ if (!checkRateLimit($clientIp)) {
     sendResponse(false, 'Rate limit exceeded. Please try again later', null, 429);
 }
 
-// Create upload directory if it doesn't exist
-if (!file_exists(UPLOAD_DIR)) {
-    if (!mkdir(UPLOAD_DIR, 0755, true)) {
+// Create upload subdirectories if they don't exist
+foreach ([UPLOAD_DIR, UPLOAD_DIR_IMAGES, UPLOAD_DIR_PDFS] as $dir) {
+    if (!file_exists($dir) && !mkdir($dir, 0755, true)) {
         sendResponse(false, 'Failed to create upload directory', null, 500);
     }
 }
 
-// Protect upload directory with .htaccess
+// Protect uploads/ root — no execution, no listing
 $htaccessPath = UPLOAD_DIR . '.htaccess';
 if (!file_exists($htaccessPath)) {
     $htaccessContent = "php_flag engine off\n";
-    $htaccessContent .= "AddType application/octet-stream .php .php3 .php4 .php5 .phtml\n";
+    $htaccessContent .= "Options -ExecCGI -Indexes\n";
+    $htaccessContent .= "AddType application/octet-stream .php .php3 .php4 .php5 .phtml .pl .py .sh\n";
     file_put_contents($htaccessPath, $htaccessContent);
+}
+
+// Protect uploads/pdfs/ — restrict execution, set correct MIME type
+$pdfHtaccessPath = UPLOAD_DIR_PDFS . '.htaccess';
+if (!file_exists($pdfHtaccessPath)) {
+    $pdfHtaccessContent = "php_flag engine off\n";
+    $pdfHtaccessContent .= "Options -ExecCGI -Indexes\n";
+    $pdfHtaccessContent .= "AddType application/octet-stream .php .php3 .php4 .php5 .phtml .pl .py .sh\n";
+    $pdfHtaccessContent .= "AddType application/pdf .pdf\n";
+    $pdfHtaccessContent .= "<FilesMatch \"\.pdf$\">\n";
+    $pdfHtaccessContent .= "    Header set X-Content-Type-Options \"nosniff\"\n";
+    $pdfHtaccessContent .= "</FilesMatch>\n";
+    file_put_contents($pdfHtaccessPath, $pdfHtaccessContent);
+}
+
+// Protect uploads/images/ — no execution, no listing
+$imgHtaccessPath = UPLOAD_DIR_IMAGES . '.htaccess';
+if (!file_exists($imgHtaccessPath)) {
+    $imgHtaccessContent = "php_flag engine off\n";
+    $imgHtaccessContent .= "Options -ExecCGI -Indexes\n";
+    $imgHtaccessContent .= "AddType application/octet-stream .php .php3 .php4 .php5 .phtml .pl .py .sh\n";
+    file_put_contents($imgHtaccessPath, $imgHtaccessContent);
 }
 
 // Check if file was uploaded
@@ -192,19 +237,24 @@ if (!isset($_FILES['image'])) {
 
 $file = $_FILES['image'];
 
-// Validate the image
-$validationErrors = validateImage($file);
+// Validate the file
+$validationErrors = validateFile($file);
 if (!empty($validationErrors)) {
     sendResponse(false, implode(', ', $validationErrors), null, 400);
 }
 
-// Generate unique filename
+// Determine subdirectory and filename prefix based on type
 $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+$isPdf = ($extension === 'pdf');
+$prefix = $isPdf ? 'pdf_' : 'img_';
+$subDir = $isPdf ? UPLOAD_DIR_PDFS : UPLOAD_DIR_IMAGES;
+$subPath = $isPdf ? 'pdfs' : 'images';
+
 $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
 $sanitizedName = sanitizeFilename($originalName);
-$uniqueId = uniqid('img_', true);
+$uniqueId = uniqid($prefix, true);
 $newFilename = $uniqueId . '_' . substr($sanitizedName, 0, 50) . '.' . $extension;
-$uploadPath = UPLOAD_DIR . $newFilename;
+$uploadPath = $subDir . $newFilename;
 
 // Move uploaded file
 if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
@@ -214,10 +264,10 @@ if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
 // Set proper permissions
 chmod($uploadPath, 0644);
 
-// Generate URL (adjust this based on your domain structure)
+// Generate URL
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'];
-$imageUrl = $protocol . '://' . $host . '/uploads/' . $newFilename;
+$imageUrl = $protocol . '://' . $host . '/uploads/' . $subPath . '/' . $newFilename;
 
 // Success response
 sendResponse(true, 'File uploaded successfully', [

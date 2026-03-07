@@ -87,22 +87,6 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           Εξαντλήθηκε
         </div>
       )}
-
-      {/*<CardFooter className="p-4 pt-0">
-        <Button 
-          className="w-full rounded-3xl" 
-          asChild
-          disabled={!hasStock}
-        >
-          <Link to={`/products/${product.id}`}>
-            <span className="md:hidden">Επιλογή</span>
-            <span className="hidden md:inline">
-              {hasStock ? 'Επιλογή Παραλλαγής' : 'Εξαντλήθηκε'}
-            </span>
-          </Link>
-        </Button>
-      </CardFooter>*/}
-
     </Card>
   );
 };

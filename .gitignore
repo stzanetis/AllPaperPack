@@ -33,3 +33,8 @@ TODO.md
 .env
 /setup/old
 report
+
+# Test files
+/setup/uploads
+/setup/rate_limit.json
+/backup
