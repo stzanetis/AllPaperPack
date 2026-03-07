@@ -349,6 +349,39 @@ export type Database = {
         }
         Relationships: []
       }
+      catalogues: {
+        Row: {
+          id: number
+          title: string
+          description: string | null
+          file_path: string
+          is_active: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          title: string
+          description?: string | null
+          file_path: string
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          title?: string
+          description?: string | null
+          file_path?: string
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       carousel_images: {
         Row: {
           id: number

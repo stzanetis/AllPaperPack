@@ -8,6 +8,7 @@ import { CategoryManagement } from '@/components/admin/CategoryManagement';
 import { OrderManagement } from '@/components/admin/OrderManagement';
 import { TagManagement } from '@/components/admin/TagManagement';
 import { SiteSettingsManagement } from '@/components/admin/SiteSettingsManagement';
+import { CatalogueManagement } from '@/components/admin/CatalogueManagement';
 import { Package, ShoppingCart, Users, Tag, Settings } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
@@ -137,6 +138,7 @@ export default function AdminDashboard() {
           <TabsTrigger className="rounded-full text-xs sm:text-sm" value="categories">Κατηγορίες</TabsTrigger>
           <TabsTrigger className="rounded-full text-xs sm:text-sm" value="tags">Ετικέτες</TabsTrigger>
           <TabsTrigger className="rounded-full text-xs sm:text-sm" value="orders">Παραγγελίες</TabsTrigger>
+          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="catalogues">Κατάλογοι</TabsTrigger>
           <TabsTrigger className="rounded-full text-xs sm:text-sm" value="settings">Ρυθμίσεις</TabsTrigger>
         </TabsList>
 
@@ -154,6 +156,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="orders">
           <OrderManagement />
+        </TabsContent>
+
+        <TabsContent value="catalogues">
+          <CatalogueManagement />
         </TabsContent>
 
         <TabsContent value="settings">
