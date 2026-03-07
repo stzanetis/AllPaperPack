@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { lazy, Suspense } from "react";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -16,9 +17,10 @@ import Contact from "./pages/Contact";
 import Account from "./pages/Account";
 import Checkout from "./pages/Checkout";
 import Catalogues from "./pages/Catalogues";
-import AdminDashboard from "./pages/admin/Dashboard";
 import NotFound from "./pages/NotFound";
 import ProductDetails from "./pages/ProductDetails";
+
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 
 const queryClient = new QueryClient();
 
@@ -43,7 +45,11 @@ const App = () => (
                   <Route path="/account" element={<Account />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin" element={
+                    <Suspense fallback={null}>
+                      <AdminDashboard />
+                    </Suspense>
+                  } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>

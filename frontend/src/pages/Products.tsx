@@ -339,7 +339,7 @@ export default function Products() {
               placeholder="Αναζήτηση προϊόντων..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="rounded-full"
+              className="rounded-full bg-white"
             />
           </div>
           
@@ -349,7 +349,7 @@ export default function Products() {
               value={selectedParentCategory}
               onValueChange={handleParentCategoryChange}
             >
-              <SelectTrigger className="rounded-full">
+              <SelectTrigger className="rounded-full bg-white">
                 <SelectValue placeholder="Κατηγορία" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl bg-white">
@@ -370,7 +370,7 @@ export default function Products() {
                 value={selectedSubCategory}
                 onValueChange={handleSubCategoryChange}
               >
-                <SelectTrigger className="rounded-full">
+                <SelectTrigger className="rounded-full bg-white">
                   <SelectValue placeholder="Υποκατηγορία" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl bg-white">
@@ -391,7 +391,7 @@ export default function Products() {
               value={selectedTag}
               onValueChange={handleTagChange}
             >
-              <SelectTrigger className="rounded-full">
+              <SelectTrigger className="rounded-full bg-white">
                 <SelectValue placeholder="Προτεινόμενα" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl bg-white">
@@ -410,7 +410,7 @@ export default function Products() {
               value={sortBy}
               onValueChange={(value) => setSortBy(value as 'name' | 'price-asc' | 'price-desc')}
             >
-              <SelectTrigger className="rounded-full">
+              <SelectTrigger className="rounded-full bg-white">
                 <SelectValue placeholder="Ταξινόμηση" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl">

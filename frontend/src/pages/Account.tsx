@@ -226,12 +226,12 @@ export default function Account() {
       <hr className="mt-1 flex-1 border-gray-300 mb-8" aria-hidden />
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md rounded-full">
-          <TabsTrigger value="profile" className="flex items-center gap-2 rounded-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-md rounded-full border">
+            <TabsTrigger value="profile" className="flex items-center gap-2 rounded-full data-[state=active]:bg-white data-[state=active]:text-black">
             <User className="h-4 w-4" />
             Στοιχεία
-          </TabsTrigger>
-          <TabsTrigger value="orders" className="flex items-center gap-2 rounded-full">
+            </TabsTrigger>
+          <TabsTrigger value="orders" className="flex items-center gap-2 rounded-full data-[state=active]:bg-white data-[state=active]:text-black">
             <Package className="h-4 w-4" />
             Παραγγελίες
           </TabsTrigger>
@@ -254,21 +254,21 @@ export default function Account() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1">
                       <Label className="ml-2" htmlFor="name">Όνομα</Label>
-                      <Input className="rounded-full" id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Όνομα" />
+                      <Input className="rounded-full bg-white" id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Όνομα" />
                     </div>
                     <div className="space-y-1">
                       <Label className="ml-2" htmlFor="surname">Επώνυμο</Label>
-                      <Input className="rounded-full" id="surname" value={surname} onChange={(e) => setSurname(e.target.value)} placeholder="Επώνυμο" />
+                      <Input className="rounded-full bg-white" id="surname" value={surname} onChange={(e) => setSurname(e.target.value)} placeholder="Επώνυμο" />
                     </div>
                   </div>
                   <div className="space-y-1">
                     <Label className="ml-2" htmlFor="email">Email</Label>
-                    <Input className="rounded-full" id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
+                    <Input className="rounded-full bg-white" id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
                     <p className="text-xs text-muted-foreground">Η αλλαγή email απαιτεί επιβεβαίωση</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="ml-2" htmlFor="telephone">Τηλέφωνο</Label>
-                    <Input className="rounded-full" id="telephone" value={telephone} onChange={(e) => setTelephone(formatTelephone(e.target.value))} placeholder="6912345678" maxLength={10} />
+                    <Input className="rounded-full bg-white" id="telephone" value={telephone} onChange={(e) => setTelephone(formatTelephone(e.target.value))} placeholder="6912345678" maxLength={10} />
                   </div>
                 </CardContent>
               </Card>
@@ -285,16 +285,16 @@ export default function Account() {
                 <CardContent className="space-y-4">
                   <div className="space-y-1">
                     <Label className="ml-2" htmlFor="street">Οδός & Αριθμός</Label>
-                    <Input className="rounded-full" id="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Παράδειγμα 123" />
+                    <Input className="rounded-full bg-white" id="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Παράδειγμα 123" />
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1">
                       <Label className="ml-2" htmlFor="city">Πόλη</Label>
-                      <Input className="rounded-full" id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Αθήνα" />
+                      <Input className="rounded-full bg-white" id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Αθήνα" />
                     </div>
                     <div className="space-y-1">
                       <Label className="ml-2" htmlFor="zip">Τ.Κ.</Label>
-                      <Input className="rounded-full" id="zip" value={zip} onChange={(e) => setZip(e.target.value)} placeholder="12345" />
+                      <Input className="rounded-full bg-white" id="zip" value={zip} onChange={(e) => setZip(e.target.value)} placeholder="12345" />
                     </div>
                   </div>
                 </CardContent>
@@ -312,11 +312,11 @@ export default function Account() {
                 <CardContent className="space-y-4">
                   <div className="space-y-1">
                     <Label className="ml-2" htmlFor="company">Επωνυμία εταιρείας</Label>
-                    <Input className="rounded-full" id="company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Επωνυμία εταιρείας" />
+                    <Input className="rounded-full bg-white" id="company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Επωνυμία εταιρείας" />
                   </div>
                   <div className="space-y-1">
                     <Label className="ml-2" htmlFor="afm">ΑΦΜ</Label>
-                    <Input className="rounded-full" id="afm" value={afmNumber} onChange={(e) => setAfmNumber(formatAFM(e.target.value))} placeholder="123456789" maxLength={9} />
+                    <Input className="rounded-full bg-white" id="afm" value={afmNumber} onChange={(e) => setAfmNumber(formatAFM(e.target.value))} placeholder="123456789" maxLength={9} />
                   </div>
                 </CardContent>
               </Card>
@@ -333,11 +333,11 @@ export default function Account() {
                 <CardContent className="space-y-4">
                   <div className="space-y-1">
                     <Label className="ml-2" htmlFor="newPassword">Νέος κωδικός</Label>
-                    <Input className="rounded-full" id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
+                    <Input className="rounded-full bg-white" id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
                   </div>
                   <div className="space-y-1">
                     <Label className="ml-2" htmlFor="confirmPassword">Επιβεβαίωση κωδικού</Label>
-                    <Input className="rounded-full" id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+                    <Input className="rounded-full bg-white" id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
                   </div>
                 </CardContent>
               </Card>

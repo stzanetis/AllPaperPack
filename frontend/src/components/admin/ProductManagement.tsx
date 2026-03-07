@@ -527,7 +527,7 @@ export const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => 
             placeholder="Αναζήτηση προϊόντων..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="rounded-full"
+            className="rounded-full bg-white"
           />
         </div>
       </CardHeader>

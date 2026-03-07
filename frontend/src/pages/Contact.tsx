@@ -74,24 +74,24 @@ export default function Contact() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1">
                 <Label className="ml-2" htmlFor="fullName">Ονοματεπώνυμο</Label>
-                <Input className="rounded-full" id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                <Input className="rounded-full bg-white" id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
               </div>
               <div className="space-y-1">
                 <Label className="ml-2" htmlFor="email">Email</Label>
-                <Input className="rounded-full" id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input className="rounded-full bg-white" id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
             </div>
             <div className="space-y-1">
               <Label className="ml-2" htmlFor="phone">Τηλέφωνο (προαιρετικό)</Label>
-              <Input className="rounded-full" id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input className="rounded-full bg-white" id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label className="ml-2" htmlFor="subject">Θέμα</Label>
-              <Input className="rounded-full" id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+              <Input className="rounded-full bg-white" id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label className="ml-2" htmlFor="message">Μήνυμα</Label>
-              <Textarea className="rounded-3xl" id="message" value={message} onChange={(e) => setMessage(e.target.value)} rows={6} required />
+              <Textarea className="rounded-3xl bg-white" id="message" value={message} onChange={(e) => setMessage(e.target.value)} rows={6} required />
             </div>
             <Button type="submit" className="w-full rounded-3xl md:w-auto">Αποστολή</Button>
           </form>

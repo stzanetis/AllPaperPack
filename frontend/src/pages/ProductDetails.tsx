@@ -181,7 +181,7 @@ export default function ProductDetails() {
   return (
     <div className={`container mx-auto px-4 py-10 ${!isAvailable ? 'opacity-80 grayscale pointer-events-none' : ''}`}>
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
-        <div className={`lg:col-span-2 aspect-square max-w-md mx-auto overflow-hidden rounded-lg bg-muted ${stock > 0 ? '' : 'opacity-80 grayscale'}`}>
+        <div className={`lg:col-span-2 aspect-square max-w-md mx-auto overflow-hidden border border-gray-200 rounded-3xl bg-muted ${stock > 0 ? '' : 'opacity-80 grayscale'}`}>
           <img
             src={product.image_path || '/placeholder.svg'}
             alt={product.name}
@@ -369,13 +369,13 @@ export default function ProductDetails() {
                 size="icon"
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
                 disabled={qty <= 1}
-                className="h-9 w-9 rounded-full"
+                className="h-9 w-9 rounded-full bg-white"
               >
                 −
               </Button>
               <Input
                 type="number"
-                className="w-20 h-9 rounded-full text-center"
+                className="w-20 h-9 rounded-full text-center bg-white"
                 value={qty}
                 min={1}
                 max={stock || undefined}
@@ -391,7 +391,7 @@ export default function ProductDetails() {
                 size="icon"
                 onClick={() => setQty((q) => Math.min(stock || q + 1, q + 1))}
                 disabled={stock > 0 ? qty >= stock : false}
-                className="h-9 w-9 rounded-full"
+                className="h-9 w-9 rounded-full bg-white"
               >
                 +
               </Button>

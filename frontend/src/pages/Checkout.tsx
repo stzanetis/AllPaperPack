@@ -186,7 +186,7 @@ export default function Checkout() {
           ) : (
             <form onSubmit={handlePlaceOrder} className="space-y-6">
               {noSaved && (
-                <div className="border rounded-3xl p-4 bg-amber-50">
+                <div className="border border-yellow-800/20 rounded-3xl p-4 bg-amber-50">
                   <div className="font-medium mb-1">Δεν βρέθηκαν πλήρη αποθηκευμένα στοιχεία.</div>
                   <p className="text-sm text-muted-foreground">
                     Συμπληρώστε τα στοιχεία σας παρακάτω ή <Link to="/account" className="text-primary underline">ενημερώστε τον λογαριασμό σας</Link>.
@@ -272,17 +272,17 @@ export default function Checkout() {
                     <CardContent className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                          <Label htmlFor="name">Όνομα <span className="text-red-500">*</span></Label>
-                          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                          <Label className="ml-1" htmlFor="name">Όνομα <span className="text-red-500">*</span></Label>
+                          <Input className="rounded-3xl bg-white" id="name" value={name} onChange={(e) => setName(e.target.value)} required />
                         </div>
                         <div>
-                          <Label htmlFor="surname">Επώνυμο <span className="text-red-500">*</span></Label>
-                          <Input id="surname" value={surname} onChange={(e) => setSurname(e.target.value)} required />
+                          <Label className="ml-1" htmlFor="surname">Επώνυμο <span className="text-red-500">*</span></Label>
+                          <Input className="rounded-3xl bg-white" id="surname" value={surname} onChange={(e) => setSurname(e.target.value)} required />
                         </div>
                       </div>
                       <div>
-                        <Label htmlFor="telephone">Τηλέφωνο <span className="text-red-500">*</span></Label>
-                        <Input id="telephone" value={telephone} onChange={(e) => setTelephone(formatTelephone(e.target.value))} required placeholder="6912345678" maxLength={10} />
+                        <Label className="ml-1" htmlFor="telephone">Τηλέφωνο <span className="text-red-500">*</span></Label>
+                        <Input className="rounded-3xl bg-white" id="telephone" value={telephone} onChange={(e) => setTelephone(formatTelephone(e.target.value))} required placeholder="6912345678" maxLength={10} />
                       </div>
                     </CardContent>
                   </Card>
@@ -294,17 +294,17 @@ export default function Checkout() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <Label htmlFor="street">Οδός & Αριθμός <span className="text-red-500">*</span></Label>
-                        <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} required placeholder="Παράδειγμα 123" />
+                        <Label className="ml-1" htmlFor="street">Οδός & Αριθμός <span className="text-red-500">*</span></Label>
+                        <Input className="rounded-3xl bg-white" id="street" value={street} onChange={(e) => setStreet(e.target.value)} required placeholder="Παράδειγμα 123" />
                       </div>
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                          <Label htmlFor="city">Πόλη <span className="text-red-500">*</span></Label>
-                          <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} required placeholder="Αθήνα" />
+                          <Label className="ml-1" htmlFor="city">Πόλη <span className="text-red-500">*</span></Label>
+                          <Input className="rounded-3xl bg-white" id="city" value={city} onChange={(e) => setCity(e.target.value)} required placeholder="Αθήνα" />
                         </div>
                         <div>
-                          <Label htmlFor="zip">Τ.Κ.</Label>
-                          <Input id="zip" value={zip} onChange={(e) => setZip(e.target.value)} placeholder="12345" />
+                          <Label className="ml-1" htmlFor="zip">Τ.Κ.</Label>
+                          <Input className="rounded-3xl bg-white" id="zip" value={zip} onChange={(e) => setZip(e.target.value)} placeholder="12345" />
                         </div>
                       </div>
                     </CardContent>
@@ -317,12 +317,12 @@ export default function Checkout() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <Label htmlFor="companyName">Επωνυμία εταιρείας <span className="text-red-500">*</span></Label>
-                        <Input id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Επωνυμία εταιρείας" />
+                        <Label className="ml-1" htmlFor="companyName">Επωνυμία εταιρείας <span className="text-red-500">*</span></Label>
+                        <Input className="rounded-3xl bg-white" id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Επωνυμία εταιρείας" />
                       </div>
                       <div>
-                        <Label htmlFor="afmNumber">ΑΦΜ <span className="text-red-500">*</span></Label>
-                        <Input id="afmNumber" required value={afmNumber} onChange={(e) => setAfmNumber(formatAFM(e.target.value))} placeholder="123456789" maxLength={9} />
+                        <Label className="ml-1" htmlFor="afmNumber">ΑΦΜ <span className="text-red-500">*</span></Label>
+                        <Input className="rounded-3xl bg-white" id="afmNumber" required value={afmNumber} onChange={(e) => setAfmNumber(formatAFM(e.target.value))} placeholder="123456789" maxLength={9} />
                       </div>
                     </CardContent>
                   </Card>
@@ -394,7 +394,7 @@ export default function Checkout() {
             {/* Actions */}
             <div className="sticky top-80 mt-6 flex gap-3">
             <Link to="/cart" className="flex-1">
-              <Button variant="outline" type="button" className="hover:bg-primary/90 rounded-3xl w-full">Πίσω στο Καλάθι</Button>
+              <Button variant="outline" type="button" className="hover:bg-primary/90 rounded-3xl w-full bg-white">Πίσω στο Καλάθι</Button>
             </Link>
             <Button 
               type="submit" 

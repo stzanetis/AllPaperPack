@@ -133,13 +133,13 @@ export default function AdminDashboard() {
 
       {/* Management Tabs */}
       <Tabs defaultValue="products" className="space-y-4">
-        <TabsList className="h-auto flex-wrap gap-1 p-1 rounded-2xl">
-          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="products">Προϊόντα</TabsTrigger>
-          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="categories">Κατηγορίες</TabsTrigger>
-          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="tags">Ετικέτες</TabsTrigger>
-          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="orders">Παραγγελίες</TabsTrigger>
-          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="catalogues">Κατάλογοι</TabsTrigger>
-          <TabsTrigger className="rounded-full text-xs sm:text-sm" value="settings">Ρυθμίσεις</TabsTrigger>
+        <TabsList className="h-auto border flex-wrap gap-1 p-1 rounded-3xl">
+          <TabsTrigger className="rounded-full text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:text-black" value="products">Προϊόντα</TabsTrigger>
+          <TabsTrigger className="rounded-full text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:text-black" value="categories">Κατηγορίες</TabsTrigger>
+          <TabsTrigger className="rounded-full text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:text-black" value="tags">Ετικέτες</TabsTrigger>
+          <TabsTrigger className="rounded-full text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:text-black" value="orders">Παραγγελίες</TabsTrigger>
+          <TabsTrigger className="rounded-full text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:text-black" value="catalogues">Κατάλογοι</TabsTrigger>
+          <TabsTrigger className="rounded-full text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:text-black" value="settings">Ρυθμίσεις</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products">

@@ -342,8 +342,8 @@ export const SiteSettingsManagement = () => {
             <Input
               value={bannerText}
               onChange={(e) => setBannerText(e.target.value)}
-              placeholder="We Think Green 🌱"
-              className="flex-1 rounded-full"
+              placeholder="We Think Green"
+              className="flex-1 rounded-full bg-white"
             />
             <Button onClick={saveBannerText} disabled={loading || !bannerChanged}
                     className="rounded-full hover:bg-primary"
