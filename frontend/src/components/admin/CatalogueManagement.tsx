@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import { Plus, Trash2, Edit, ChevronUp, ChevronDown, FileText, Upload } from 'lucide-react';
 import { useImageUpload } from '@/hooks/use-image-upload';
@@ -146,10 +145,16 @@ export const CatalogueManagement = () => {
     const other = sorted[swapIdx];
     const now = new Date().toISOString();
 
-    await Promise.all([
+    const [res1, res2] = await Promise.all([
       supabase.from('catalogues').update({ display_order: other.display_order, updated_at: now }).eq('id', c.id),
       supabase.from('catalogues').update({ display_order: c.display_order, updated_at: now }).eq('id', other.id),
     ]);
+
+    if (res1.error || res2.error) {
+      const msg = res1.error?.message ?? res2.error?.message;
+      toast({ title: 'Σφάλμα', description: msg, variant: 'destructive' });
+      return;
+    }
     fetchCatalogues();
   };
 
@@ -229,7 +234,7 @@ export const CatalogueManagement = () => {
             ))}
             {catalogues.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   Δεν υπάρχουν κατάλογοι.
                 </TableCell>
               </TableRow>

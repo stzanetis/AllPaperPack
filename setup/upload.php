@@ -11,7 +11,7 @@ define('UPLOAD_DIR',        __DIR__ . '/uploads/');
 define('UPLOAD_DIR_IMAGES', __DIR__ . '/uploads/images/');
 define('UPLOAD_DIR_PDFS',   __DIR__ . '/uploads/pdfs/');
 define('MAX_FILE_SIZE', 100 * 1024 * 1024); // 100MB
-define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']);
+define('MAX_FILE_SIZE_MB', round(MAX_FILE_SIZE / 1024 / 1024));
 define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf']);
 define('RATE_LIMIT_FILE', __DIR__ . '/rate_limit.json');
 define('MAX_UPLOADS_PER_IP', 20); // Max uploads per hour per IP
@@ -103,7 +103,7 @@ function validateFile($file) {
     
     // Check file size
     if ($file['size'] > MAX_FILE_SIZE) {
-        $errors[] = 'File size exceeds maximum allowed size (5MB)';
+        $errors[] = 'File size exceeds maximum allowed size (' . MAX_FILE_SIZE_MB . 'MB)';
     }
     
     // Check file extension
@@ -112,17 +112,28 @@ function validateFile($file) {
         $errors[] = 'Invalid file extension';
     }
     
-    // Read file content once for all checks
-    $content = file_get_contents($file['tmp_name']);
-    
     if ($extension === 'pdf') {
+        // Read only the header bytes needed for magic-byte check (avoid loading 100MB into memory)
+        $header = @file_get_contents($file['tmp_name'], false, null, 0, 1024);
+        if ($header === false) {
+            $errors[] = 'Could not read uploaded file';
+            return $errors;
+        }
         // Validate PDF magic bytes (%PDF-)
-        if (substr($content, 0, 5) !== '%PDF-') {
+        if (substr($header, 0, 5) !== '%PDF-') {
             $errors[] = 'File is not a valid PDF';
         }
-        // Block embedded JavaScript in PDFs (common malicious vector)
-        if (preg_match('/\/JS\s*(\(|<<)|\/JavaScript\s*(\(|<<)/i', $content)) {
+        // Scan full content for embedded JavaScript (common malicious vector)
+        $fullContent = @file_get_contents($file['tmp_name']);
+        if ($fullContent === false) {
+            $errors[] = 'Could not read uploaded file';
+            return $errors;
+        }
+        if (preg_match('/\/JS\s*(\(|<<)|\/JavaScript\s*(\(|<<)/i', $fullContent)) {
             $errors[] = 'PDF contains prohibited embedded scripts';
+        }
+        if (preg_match('/<\?php/i', $fullContent) || preg_match('/<script/i', $fullContent)) {
+            $errors[] = 'File contains prohibited content';
         }
     } else {
         // Verify it's actually an image via magic bytes + structure
@@ -130,11 +141,16 @@ function validateFile($file) {
         if ($imageInfo === false) {
             $errors[] = 'File is not a valid image';
         }
-    }
-    
-    // Block PHP/HTML injection in any file type
-    if (preg_match('/<\?php/i', $content) || preg_match('/<script/i', $content)) {
-        $errors[] = 'File contains prohibited content';
+        // Read only what we need for injection checks (images are max 5MB)
+        $content = @file_get_contents($file['tmp_name']);
+        if ($content === false) {
+            $errors[] = 'Could not read uploaded file';
+            return $errors;
+        }
+        // Block PHP/HTML injection
+        if (preg_match('/<\?php/i', $content) || preg_match('/<script/i', $content)) {
+            $errors[] = 'File contains prohibited content';
+        }
     }
     
     return $errors;
@@ -192,7 +208,7 @@ if (!file_exists($htaccessPath)) {
     file_put_contents($htaccessPath, $htaccessContent);
 }
 
-// Protect uploads/pdfs/ — force download, block scripts
+// Protect uploads/pdfs/ — restrict execution, set correct MIME type
 $pdfHtaccessPath = UPLOAD_DIR_PDFS . '.htaccess';
 if (!file_exists($pdfHtaccessPath)) {
     $pdfHtaccessContent = "php_flag engine off\n";

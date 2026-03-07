@@ -22,7 +22,10 @@ export default function Catalogues() {
       .select('id, title, description, file_path')
       .eq('is_active', true)
       .order('display_order', { ascending: true })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Failed to load catalogues:', error.message);
+        }
         setCatalogues(data || []);
         setLoading(false);
       });
